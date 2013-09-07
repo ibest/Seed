@@ -21,7 +21,7 @@ Temporary install notes:
               runApp("/path_to_microbePlot_folder")
 
 As of 10/6/2013, microbePlot can be used without local installation by visiting http://bioinfo-mite.ibest.uidaho.edu:3838/microbePlot/
-
+However, the server is currently only available from within the UI network. 
 
 Notes:
   Input data must be in two files. The metadata file should include sample information. The microbe data file should include the relative abundances of the microbes in each sample.
