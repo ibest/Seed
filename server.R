@@ -226,6 +226,7 @@ shinyServer(function(input, output) {
       ),
       helpText("The number of samples in each category is shown in blue."),
       helpText("95% confidence intervals assume normality and independence."),
+      helpText("NA values are automatically omitted."),
       HTML('<br><br>'),
       HTML('<div align="right">'),
       downloadButton("saveBar", "Save Plot"),
@@ -242,13 +243,13 @@ shinyServer(function(input, output) {
       barNames<-levels(newCats)
       groupedValues<-split(allData()[,barVarCol], as.numeric(newCats))
     }
-    means<-sapply(groupedValues, mean)
+    means<-sapply(groupedValues, function(i) mean(i, na.rm=T))
     if (input$barCat){
       names(means)<-barNames
     }
-    sds<-sapply(groupedValues, sd)
+    sds<-sapply(groupedValues, function(i) sd(i, na.rm=T))
     sds[is.na(sds)]<-0
-    ns<-sapply(groupedValues, length)
+    ns<-sapply(lapply(groupedValues, na.omit), length)
     errors<-qnorm(0.975)*sds/sqrt(ns)
     x<-barplot(means, 
                xlab=colnames(allData())[catVarCol], 
