@@ -375,7 +375,9 @@ shinyServer(function(input, output) {
       sliderInput("cutLevel", "Cut-off level:", min=0.0, max=1.0, value=0.8),
       numericInput("selectGroup", "Selected group:", 1),
       HTML('<br>'),
-      helpText("Note: Metadata correlations use the Pearson method"),
+      helpText("Note: Metadata correlations use the Pearson method."),
+      helpText("NA correlations replaced with 0."),
+
       HTML('<hr>'),
       HTML('<div align="right">'),
       downloadButton("saveWGCNA", "Save Plot"),
@@ -383,7 +385,11 @@ shinyServer(function(input, output) {
       )
   })
 
-  cors <- reactive({ cor(microbeData(), method=input$corMethod) })
+  cors <- reactive({ 
+    pnacors<-cor(microbeData(), method=input$corMethod) 
+    pnacors[is.na(pnacors)]<-0
+    pnacors
+  })
   dADJ <- reactive({ as.dist(1-as.matrix(abs(cors()))) })
   hdADJ <- reactive({ hclust(dADJ(), method="average") })
   
