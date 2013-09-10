@@ -20,6 +20,11 @@ shinyServer(function(input, output) {
     if (input$relativize){
       microbeData <- t(apply(microbeData, 1, function(i) i/sum(i)))
     }
+    if (input$presenceAbsence){
+      rn<-row.names(microbeData)
+      microbeData<-apply(microbeData, 2, function(i) as.numeric(as.logical(i)))
+      row.names(microbeData)<-rn
+    }
     microbeData
   })
   
