@@ -29,7 +29,9 @@ shinyUI(pageWithSidebar(
           checkboxInput('microbeHeader', 'Header', TRUE),
           selectInput('microbeSep', 'Separator', c(Comma=',', Semicolon=';', Tab='\t'), 'Comma'),
           selectInput('microbeQuote', 'Quote', c(None='', 'Double Quote'='"', 'Single Quote'="'"), 'Double Quote'),
-          checkboxInput("relativize", "Convert microbeData to relative abundance", FALSE)
+          checkboxInput("relativize", "Convert microbeData to relative abundance", FALSE),
+          checkboxInput("presenceAbsence", "Convert microbeData to presence/absence", FALSE)
+
         ),
         HTML('<hr>'),
         
