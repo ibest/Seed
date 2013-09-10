@@ -368,6 +368,7 @@ shinyServer(function(input, output) {
                         colors=data.frame(colorV), 
                         dendroLabels=F, 
                         abHeight=input$clusterCutHeight*max(clusterObject()$height), 
+                        groupLabels=input$clusterColorVariable,
                         main="Species dendrogram and module colors")  
   }
 
@@ -382,6 +383,7 @@ shinyServer(function(input, output) {
     plotDendroAndColors(subtreeObject(), 
                         colors=data.frame(colorV), 
                         dendroLabels=F, 
+                        groupLabels=input$clusterColorVariable,
                         main="Species dendrogram and module colors")  
   }
 
