@@ -14,7 +14,9 @@ shinyServer(function(input, output) {
 
   # microbeData will contain relative abundances
   microbeData <- reactive({ 
-    microbeData <- read.csv(input$microbeFilename$datapath) 
+    microbeFile <- input$microbeFilename$datapath
+    if (is.null(microbeFile)) return(NULL)
+    microbeData <- read.csv(microbeFile, header=input$microbeHeader, sep=input$microbeSep, quote=input$microbeQuote) 
     if (input$relativize){
       microbeData <- t(apply(microbeData, 1, function(i) i/sum(i)))
     }
@@ -23,17 +25,28 @@ shinyServer(function(input, output) {
   
   # metaData will contain all sample information other than microbial abundances
   # When reading in metadata, also calculate diversity metrics from microbeData and add to metaData
-  metaData <- reactive({ cbind(read.csv(input$metaFilename$datapath),
-                               shannonDiversity=diversity(microbeData(), index="shannon"),
-                               simpsonDiversity=diversity(microbeData(), index="simpson"),
-                               inverseSimpsonDiversity=diversity(microbeData(), index="invsimpson")) 
-                         })
+  metaData <- reactive({ 
+    metaFile <- input$metaFilename$datapath
+    if (is.null(metaFile)) return(NULL)
+    metaData <- read.csv(metaFile, header=input$metaHeader, sep=input$metaSep, quote=input$metaQuote)
+    if (is.null(input$microbeFilename$datapath)) return(metaData)
+    cbind(metaData,
+      shannonDiversity=diversity(microbeData(), index="shannon"),
+      simpsonDiversity=diversity(microbeData(), index="simpson"),
+      inverseSimpsonDiversity=diversity(microbeData(), index="invsimpson")
+    ) 
+  })
   
   # include all data combined in order to produce comprehensive lists of features
-  allData <- reactive({ cbind(metaData(), microbeData()) })
+  allData <- reactive({ 
+    if (is.null(input$microbeFilename$datapath)||is.null(input$metaFilename$datapath)) return(NULL)
+    cbind(metaData(), microbeData()) 
+  })
 
   # extract feature names from allData
-  features <- reactive({ colnames(allData) })
+  features <- reactive({ 
+    colnames(allData) 
+  })
   
   # display top five lines of metaData file
   output$viewMetaData <- renderTable({
@@ -73,6 +86,7 @@ shinyServer(function(input, output) {
   
   # histogram plot
   plotHistogram <- function(){
+    if (is.null(input$breaks)) return(NULL)
     hist(as.numeric(allData()[,which(colnames(allData())==input$variable)]), 
          breaks=input$breaks, 
          xlab=input$variable, 

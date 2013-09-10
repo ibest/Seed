@@ -11,17 +11,31 @@ shinyUI(pageWithSidebar(
   tabsetPanel(
     
     tabPanel("Data", 
-#      uiOutput("fileSelection"),
       sidebarPanel(
-        fileInput("metaFilename", "Select metadata file", 
-                  accept=c('text/csv', 'text/comma-separated-values,text/plain')),
-        fileInput("microbeFilename", "Select microbe file", 
-                  accept=c('text/csv', 'text/comma-separated-values,text/plain')),
-        checkboxInput("relativize", "Convert microbeData to relative abundance", FALSE),
-        HTML('<br>'),
+        fileInput("metaFilename", "Select metadata file", accept=c('text/csv', 'text/comma-separated-values,text/plain')),
+        checkboxInput("metaOptions", "Show file options"),
+        conditionalPanel(
+          condition = "input.metaOptions == true",
+          checkboxInput('metaHeader', 'Header', TRUE),
+          selectInput('metaSep', 'Separator', c(Comma=',', Semicolon=';', Tab='\t'), 'Comma'),
+          selectInput('metaQuote', 'Quote', c(None='', 'Double Quote'='"', 'Single Quote'="'"), 'Double Quote')
+        ),
+        HTML('<hr>'),
+        
+        fileInput("microbeFilename", "Select microbe file", accept=c('text/csv', 'text/comma-separated-values,text/plain')),
+        checkboxInput("microbeOptions", "Show file options"),
+        conditionalPanel(
+          condition = "input.microbeOptions == true",
+          checkboxInput('microbeHeader', 'Header', TRUE),
+          selectInput('microbeSep', 'Separator', c(Comma=',', Semicolon=';', Tab='\t'), 'Comma'),
+          selectInput('microbeQuote', 'Quote', c(None='', 'Double Quote'='"', 'Single Quote'="'"), 'Double Quote'),
+          checkboxInput("relativize", "Convert microbeData to relative abundance", FALSE)
+        ),
+        HTML('<hr>'),
+        
         helpText("Input data must be in two files. The metadata file should include sample information. 
                   The microbe data file should include the abundances of the microbes in each sample."),
-        helpText("The files must be in CSV format with equal numbers of samples. Samples must be in rows, with the same order in both files.")
+        helpText("Samples must be in rows, with the same order in both files.")
 
       ),
              
@@ -101,8 +115,18 @@ shinyUI(pageWithSidebar(
                  
                )
              )
+    ),
+    # help
+    tabPanel("Help",
+      sidebarPanel(
+        selectInput("helpTopic", "Help topic", choices=c("About", "Data", "Histogram", "Scatter", "PCA", "Bar plot", "Cluster", "WGCNA"))
+      ),
+      mainPanel(
+        
+      )
     )
   ),  
+
   mainPanel()
 ))
         
