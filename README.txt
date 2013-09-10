@@ -25,9 +25,4 @@ However, the server is currently only available from within the UI network.
 
 Notes:
   Input data must be in two files. The metadata file should include sample information. The microbe data file should include the relative abundances of the microbes in each sample.
-  The files must be in CSV format with equal numbers of samples.
-  Samples must be in rows, with the same order in both files.
-
-TODO:
-  Future updates should allow more flexibility for input data.
-  Does it make sense to scale any of the data before an analysis? i.e. PCA or clustering. Microbe data as relative abundance is already scaled.
+  Samples must be in rows, with the same order in both files. Both files should have same number of samples.
