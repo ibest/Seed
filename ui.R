@@ -89,10 +89,10 @@ shinyUI(pageWithSidebar(
              mainPanel(
                tabsetPanel(
                  id = "clusterTab",
-                 tabPanel("Complete", 
+                 tabPanel("Complete", value="complete",
                           plotOutput("clusterPlot", height="600px")
                  ),
-                 tabPanel("Subtrees",
+                 tabPanel("Subtrees", value="subtree",
                           plotOutput("clusterGroupPlot", height="600px")
                  )
               )

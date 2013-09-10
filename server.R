@@ -355,8 +355,8 @@ shinyServer(function(input, output) {
   subtreeObject <- reactive({
     hclust(subtreeDist(), method=input$hclustMethod)
   })
-  
-  output$clusterPlot <- renderPlot({
+
+  plotCompleteTree<-function(){
     colorV <- as.numeric(as.factor(allData()[,which(colnames(allData())==input$clusterColorVariable)]))
     if (input$clusterColorCat){
       colorV<-as.numeric(cut(allData()[,which(colnames(allData())==input$clusterColorVariable)], input$nclusterColorCat))
@@ -369,9 +369,9 @@ shinyServer(function(input, output) {
                         dendroLabels=F, 
                         abHeight=input$clusterCutHeight*max(clusterObject()$height), 
                         main="Species dendrogram and module colors")  
-  })
-  
-  output$clusterGroupPlot <- renderPlot({
+  }
+
+  plotSubTree<-function(){
     colorV <- as.numeric(as.factor(allData()[subtreeGroups()==input$clusterGroup,which(colnames(allData())==input$clusterColorVariable)]))
     if (input$clusterColorCat){
       colorV<-as.numeric(cut(allData()[subtreeGroups()==input$clusterGroup,which(colnames(allData())==input$clusterColorVariable)], input$nclusterColorCat))
@@ -379,8 +379,29 @@ shinyServer(function(input, output) {
     if (input$clusterGradientColor){
       colorV<-colorRampPalette(c("blue", "black", "red"))(length(unique(colorV)))[colorV]
     }
-    plot(subtreeObject())
+    plotDendroAndColors(subtreeObject(), 
+                        colors=data.frame(colorV), 
+                        dendroLabels=F, 
+                        main="Species dendrogram and module colors")  
+  }
+
+  output$clusterPlot <- renderPlot({
+    plotCompleteTree()
   })
+
+  output$clusterGroupPlot <- renderPlot({
+    plotSubTree()
+  })
+
+  output$saveCluster <- downloadHandler(
+    filename = function() { paste("clusterPlot", '.pdf', sep='') },
+    content = function(filename) {
+      pdf(filename, width=10, height=10)
+      if (input$clusterTab=="complete"){plotCompleteTree()}
+      if (input$clusterTab=="subtree"){plotSubTree()}
+      dev.off()
+    }
+  )
 
 #####################################################################################################
 ############################################## WGCNA ################################################
