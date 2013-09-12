@@ -449,7 +449,7 @@ shinyServer(function(input, output) {
     plotDendrogram()
   })
   
-  plotHeatmap <- function(){
+  plotHtmp <- function(){
     groups<-cutreeDynamic(dendro=hdADJ(), distM=dADJ(), minClusterSize=3,method="tree",cutHeight=input$cutLevel)
     corlist<-sapply(unique(groups), function(i) cors()[groups==i, groups==i])
     cc<-colorRampPalette(c("white", "blue"))
@@ -463,7 +463,7 @@ shinyServer(function(input, output) {
   }
 
   output$htmpPlot <- renderPlot({
-    plotHeatmap()
+    plotHtmp()
   })
   
   plotCor <- function(){
@@ -497,9 +497,70 @@ shinyServer(function(input, output) {
     content = function(filename) {
       pdf(filename, width=10, height=10)
         if (input$wgcnaTab=="ndendrogram"){plotDendrogram()}
-        if (input$wgcnaTab=="nheatmap"){plotHeatmap()}
+        if (input$wgcnaTab=="nheatmap"){plotHtmp()}
         if (input$wgcnaTab=="ncorrelations"){plotCor()}
       dev.off()
     }
   )
+
+#####################################################################################################
+############################################# HEATMAP ###############################################
+#####################################################################################################
+
+output$heatmapVariableSelection <- renderUI({
+    sidebarPanel(
+      helpText("The heatmap and associated sample clustering are calculated with only a subset of taxa. The taxa are ranked by the sum of abundance across samples."),
+      sliderInput("numberHeatmapTaxa", "Number of taxa:", min=3, max=100, value=20),
+      selectInput("heatmapSideColorVariable", "Side color variable:", choices = colnames(allData())),
+      checkboxInput("heatmapGradientColor", "Use color gradient", FALSE),
+      checkboxInput("heatmapColorCat", "Categorize color variable", FALSE),
+      conditionalPanel(
+        condition = "input.heatmapColorCat == true",
+        numericInput("nheatmapColorCat", "Number of categories:", 4)
+      ),
+      HTML('<hr>'),
+      HTML('<div align="right">'),
+      downloadButton("saveHeatmap", "Save Plot"),
+      HTML('</div>')
+    )
+  })
+
+  plotHeatmap<-function(){
+    colorV <- as.numeric(as.factor(allData()[,which(colnames(allData())==input$heatmapSideColorVariable)]))
+    if (input$heatmapColorCat){
+      colorV<-as.numeric(cut(allData()[,which(colnames(allData())==input$heatmapSideColorVariable)], input$nheatmapColorCat))
+    }
+    if (input$heatmapGradientColor){
+      colorV<-colorRampPalette(c("blue", "black", "red"))(length(unique(colorV)))[colorV]
+    }
+    heatmapTempData<-microbeData()[order(apply(microbeData(), 1, sum), decreasing=T), ]
+    heatmapData<-t(apply(heatmapTempData, 2, as.numeric))
+    colnames(heatmapData)<-row.names(heatmapTempData)
+  
+    ## This is a terrible way to get colorV in the right order.
+    tempclust<-hclust(dist(heatmapTempData))
+    colorV<-colorV[match(tempclust$labels, row.names(microbeData()))]
+    ##
+    
+    heatmap.2(heatmapData[1:input$numberHeatmapTaxa,], scale="none", trace="none",
+              lmat = cbind(c(4,2,1),c(5,3,0)), lwid=c(4,1), lhei = c(1,4,0.5), 
+              Rowv=NA, dendrogram="column", ColSideColors=colorV)
+  
+  }
+
+  output$heatmapPlot <- renderPlot({
+    plotHeatmap()
+  })
+
+  output$saveHeatmap <- downloadHandler(
+    filename = function() { paste("heatmapPlot", ".pdf", sep="")},
+    content = function(filename) {
+      pdf(filename, width=10, height=10)
+      plotHeatmap()
+      dev.off()
+    }
+  )
+
+
+
 })

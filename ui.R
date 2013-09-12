@@ -118,6 +118,14 @@ shinyUI(pageWithSidebar(
                )
              )
     ),
+    # heatmap
+    tabPanel("Heatmap",
+      uiOutput("heatmapVariableSelection"),
+      mainPanel(
+        plotOutput("heatmapPlot", height="600px")
+      )
+    ),
+    
     # help
     tabPanel("Help",
       sidebarPanel(
