@@ -509,7 +509,8 @@ shinyServer(function(input, output) {
 
 output$heatmapVariableSelection <- renderUI({
     sidebarPanel(
-      helpText("The heatmap and associated sample clustering are calculated with only a subset of taxa. The taxa are ranked by the sum of abundance across samples."),
+      helpText("The heatmap and associated sample clustering are calculated with only a subset of taxa. 
+               The taxa are ranked by the sum of abundance across samples."),
       sliderInput("numberHeatmapTaxa", "Number of taxa:", min=3, max=100, value=20),
       selectInput("heatmapSideColorVariable", "Side color variable:", choices = colnames(allData())),
       checkboxInput("heatmapGradientColor", "Use color gradient", FALSE),
@@ -561,6 +562,24 @@ output$heatmapVariableSelection <- renderUI({
     }
   )
 
+#####################################################################################################
+############################################### HELP ################################################
+#####################################################################################################
+#   
+#   getHelpText<-function(){
+#     text<-"Somthing wrong"
+#     if (input$helpTopic == "About"){
+#       text<-"About microbePlot"
+#     }
+#     if (input$helpTopic == "Data"){
+#       text<-"Data entry"
+#     }
+#     return(text)
+#   }
+# 
+#   output$helptext <- renderPrint({
+#     print(getHelpText())
+#   })
 
 
 })

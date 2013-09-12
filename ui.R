@@ -129,10 +129,51 @@ shinyUI(pageWithSidebar(
     # help
     tabPanel("Help",
       sidebarPanel(
-        selectInput("helpTopic", "Help topic", choices=c("About", "Data", "Histogram", "Scatter", "PCA", "Bar plot", "Cluster", "WGCNA"))
+        selectInput("helpTopic", "Help topic", choices=c("About", "Data", "Histogram", "Scatter", "PCA", "Bar plot", "Cluster", "WGCNA", "Heatmap"))
       ),
       mainPanel(
-        
+        conditionalPanel(
+          condition = "input.helpTopic == 'About'",
+          helpText("microbePlot is a tool for visualizing microbial community data. It is currently being developed
+                   and may include errors in both plots and analyses. Any results provided by microbePlot should be 
+                   used with caution. The source code and install instructions are available at https://github.com/danlbek/microbePlot. 
+                   Comments, suggestions, or bug reports are welcome.")
+        ),
+        conditionalPanel(
+          condition = "input.helpTopic == 'Data'",
+          helpText("About microbePlot")
+        ),
+        conditionalPanel(
+          condition = "input.helpTopic == 'Histogram'",
+          helpText("About microbePlot")
+        ),        
+        conditionalPanel(
+          condition = "input.helpTopic == 'Scatter'",
+          helpText("About microbePlot")
+        ),        
+        conditionalPanel(
+          condition = "input.helpTopic == 'PCA'",
+          helpText("About microbePlot")
+        ),        
+        conditionalPanel(
+          condition = "input.helpTopic == 'Bar plot'",
+          helpText("About microbePlot")
+        ),        
+        conditionalPanel(
+          condition = "input.helpTopic == 'Cluster'",
+          helpText("About microbePlot")
+        ),        
+        conditionalPanel(
+          condition = "input.helpTopic == 'WGCNA'",
+          helpText("About microbePlot")
+        ),
+        conditionalPanel(
+          condition = "input.helpTopic == 'Heatmap'",
+          helpText("The heatmap and associated sample clustering are based on the microbial data. 
+                   Only a subset of microbes are used to generate the heatmap. The microbes are ranked by
+                   the sum of their abundance data. The highest ranked X microbes are used in the heatmap, where
+                   X is selected by the user.")
+        )
       )
     )
   ),  
