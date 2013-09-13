@@ -302,7 +302,8 @@ shinyServer(function(input, output) {
   output$clusterVariableSelection <- renderUI({
     sidebarPanel(
       selectInput("distMethod", "Distance method:", 
-                  choices = c("euclidean", "maximum", "manhattan", "canberra")),
+                  choices = c("euclidean", "manhattan", "canberra", "bray", "kulczynski", "jaccard", 
+                              "gower", "altGower", "morisita", "horn", "mountford", "raup", "binomial", "chao", "cao")),
       selectInput("hclustMethod", "Cluster method:", 
                   choices = c("ward", "single", "complete", "average", "mcquitty", "median", "centroid")),
       sliderInput("clusterCutHeight", "Subtree cut height:", min=0.0, max=1.0, value=0.5),
@@ -338,7 +339,7 @@ shinyServer(function(input, output) {
   })
   
   clusterDist <- reactive({
-    dist(clusterData(), method=input$distMethod)
+    vegdist(clusterData(), method=input$distMethod)
   })
   clusterObject <- reactive({
     hclust(clusterDist(), method=input$hclustMethod)
