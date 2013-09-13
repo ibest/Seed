@@ -351,7 +351,7 @@ shinyServer(function(input, output) {
     clusterData()[subtreeGroups()==input$clusterGroup,]
   })
   subtreeDist <- reactive({
-    dist(subtreeData(), method=input$distMethod)
+    vegdist(subtreeData(), method=input$distMethod)
   })
   subtreeObject <- reactive({
     hclust(subtreeDist(), method=input$hclustMethod)
