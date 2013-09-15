@@ -14,28 +14,32 @@ shinyServer(function(input, output) {
 
   # functions used by multiple plots
 
+  # color function wrappers
+  gradientColors<-function(n){
+    colorRampPalette(c("blue", "red"))(n)
+  }
+  discreteColors<-function(n){
+    rainbow(n+3)[1:n]
+  }
+  
   # generate color vector for plots
   getColor<-function(featureVector, type="unique", numCat=1){
-    colorDiscrete<-rainbow
-    colorGradient<-colorRampPalette(c("blue", "red"))
     if (type == "unique"){
       factorVector<-as.factor(featureVector)
       if (length(levels(factorVector))<=8){
         colorVector<-as.numeric(featureVector)
       }else{
-        colorVector<-(colorDiscrete(length(levels(factorVector))+3)[1:length(levels(factorVector))])[as.numeric(factorVector)]
+        colorVector<-discreteColors(length(levels(factorVector)))[as.numeric(factorVector)]
       }
     }
     if (type == "gradient"){
       # assign colors to variables in a linear manner
-      colorVector<-colorGradient(100)[as.numeric(cut(as.numeric(featureVector), 100))]
+      colorVector<-gradientColors(100)[as.numeric(cut(as.numeric(featureVector), 100))]
     }
     if (type == "category"){
-      if (numCat<=8){
-        colorVector<-as.numeric(cut(as.numeric(featureVector), numCat))
-      }else{
-        colorVector<-(colorDiscrete(numCat+3)[1:numCat])[as.numeric(cut(as.numeric(featureVector), numCat))]
-      }
+     if (numCat==1){colorVector<-1}
+     if (numCat<=8 && numCat>1){ colorVector<-as.numeric(cut(as.numeric(featureVector), numCat)) }
+     if (numCat>8){ colorVector<-discreteColors(numCat)[as.numeric(cut(as.numeric(featureVector), numCat))] }
     }
     return(colorVector)
   }
@@ -163,7 +167,7 @@ shinyServer(function(input, output) {
                        "Cagetories" = "category")
       ),
       conditionalPanel(
-        condition = "input.scatterColorType == category",
+        condition = 'input.scatterColorType == "category"',
         numericInput("nscatterColorCat", "Number of categories:", 4)
       ),
       HTML('<br><br><br>'),
@@ -217,7 +221,7 @@ shinyServer(function(input, output) {
                         "Cagetories" = "category")
       ),
       conditionalPanel(
-        condition = "input.pcaColorType == category",
+        condition = 'input.pcaColorType == "category"',
         numericInput("npcaColorCat", "Number of categories:", 4)
       ),
       HTML('<br><br><br>'),
@@ -343,7 +347,7 @@ shinyServer(function(input, output) {
                         "Cagetories" = "category")
       ),
       conditionalPanel(
-        condition = "input.clusterColorType == category",
+        condition = 'input.clusterColorType == "category"',
         numericInput("nclusterColorCat", "Number of categories:", 4)
       ),
       radioButtons("clusterChoice", "Select features that define samples", 
@@ -401,7 +405,8 @@ shinyServer(function(input, output) {
 
   plotSubTree<-function(){
     colorVariable<-which(colnames(allData())==input$clusterColorVariable)
-    colorV<-getColor(allData()[,colorVariable], type=input$clusterColorType, numCat=input$nclusterColorCat)
+    colorV<-getColor(allData()[subtreeGroups()==input$clusterGroup,colorVariable], 
+                     type=input$clusterColorType, numCat=input$nclusterColorCat)
     plotDendroAndColors(subtreeObject(), 
                         colors=data.frame(colorV), 
                         dendroLabels=F, 
@@ -540,7 +545,7 @@ output$heatmapVariableSelection <- renderUI({
                         "Cagetories" = "category")
       ),
       conditionalPanel(
-        condition = "input.heatmapColorType == category",
+        condition = 'input.heatmapColorType == "category"',
         numericInput("nheatmapColorCat", "Number of categories:", 4)
       ),
       HTML('<hr>'),
@@ -581,25 +586,7 @@ output$heatmapVariableSelection <- renderUI({
       dev.off()
     }
   )
-
-#####################################################################################################
-############################################### HELP ################################################
-#####################################################################################################
-#   
-#   getHelpText<-function(){
-#     text<-"Somthing wrong"
-#     if (input$helpTopic == "About"){
-#       text<-"About microbePlot"
-#     }
-#     if (input$helpTopic == "Data"){
-#       text<-"Data entry"
-#     }
-#     return(text)
-#   }
-# 
-#   output$helptext <- renderPrint({
-#     print(getHelpText())
-#   })
+  
 
 
 })
