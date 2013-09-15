@@ -9,6 +9,39 @@ library(gplots)
 shinyServer(function(input, output) {
 
 #####################################################################################################
+########################################## FUNCTIONS ################################################
+#####################################################################################################
+
+  # functions used by multiple plots
+
+  # generate color vector for plots
+  getColor<-function(featureVector, type="unique", numCat=1){
+    colorDiscrete<-rainbow
+    colorGradient<-colorRampPalette(c("blue", "red"))
+    if (type == "unique"){
+      factorVector<-as.factor(featureVector)
+      if (length(levels(factorVector))<=8){
+        colorVector<-as.numeric(featureVector)
+      }else{
+        colorVector<-(colorDiscrete(length(levels(factorVector))+3)[1:length(levels(factorVector))])[as.numeric(factorVector)]
+      }
+    }
+    if (type == "gradient"){
+      # assign colors to variables in a linear manner
+      colorVector<-colorGradient(100)[as.numeric(cut(as.numeric(featureVector), 100))]
+    }
+    if (type == "category"){
+      if (numCat<=8){
+        colorVector<-as.numeric(cut(as.numeric(featureVector), numCat))
+      }else{
+        colorVector<-(colorDiscrete(numCat+3)[1:numCat])[as.numeric(cut(as.numeric(featureVector), numCat))]
+      }
+    }
+    return(colorVector)
+  }
+
+
+#####################################################################################################
 ############################################# DATA ##################################################
 #####################################################################################################
 
@@ -124,10 +157,13 @@ shinyServer(function(input, output) {
       selectInput("variable1", "X:", choices = colnames(allData())),
       selectInput("variable2", "Y:", choices = colnames(allData())),
       selectInput("scatterColorVariable", "Color variable:", choices = colnames(allData())),
-      checkboxInput("scatterGradientColors", "Use color gradient", FALSE),
-      checkboxInput("scatterColorCat", "Categorize color variable", FALSE),
+      radioButtons("scatterColorType", "Color options:", 
+                  list("Unique" = "unique",
+                       "Gradient" = "gradient",
+                       "Cagetories" = "category")
+      ),
       conditionalPanel(
-        condition = "input.scatterColorCat == true",
+        condition = "input.scatterColorType == category",
         numericInput("nscatterColorCat", "Number of categories:", 4)
       ),
       HTML('<br><br><br>'),
@@ -139,20 +175,14 @@ shinyServer(function(input, output) {
   
   # generate scatter plot
   plotScatter<-function(){
-    sCV<-which(colnames(allData())==input$scatterColorVariable)
-    fsCV<-as.numeric(as.factor(allData()[,sCV]))
-    if (input$scatterColorCat){
-      fsCV <- as.numeric(cut(allData()[,sCV], input$nscatterColorCat))
-    }
-    if (input$scatterGradientColors){
-      fsCV <- colorRampPalette(c("blue", "black", "red"))(length(unique(fsCV)))[fsCV]
-    }
+    colorVariable<-which(colnames(allData())==input$scatterColorVariable)
+    colorV<-getColor(allData()[,colorVariable], type=input$scatterColorType, numCat=input$nscatterColorCat)
     plot(as.numeric(allData()[,which(colnames(allData())==input$variable1)]), 
          as.numeric(allData()[,which(colnames(allData())==input$variable2)]), 
          xlab=input$variable1, 
          ylab=input$variable2, 
          main=paste("Scatterplot of", input$variable2, "vs.", input$variable1, sep=" "),
-         col=fsCV
+         col=colorV
     )
   }
   
@@ -181,10 +211,13 @@ shinyServer(function(input, output) {
       numericInput("pcX", "Principal component X:", 1),
       numericInput("pcY", "Principal component Y:", 2), 
       selectInput("pcaColorVariable", "Color variable:", choices = colnames(allData())),
-      checkboxInput("pcaGradientColor", "Use color gradient", FALSE),
-      checkboxInput("pcaColorCat", "Categorize color variable", FALSE),
+      radioButtons("pcaColorType", "Color options:", 
+                   list("Unique" = "unique",
+                        "Gradient" = "gradient",
+                        "Cagetories" = "category")
+      ),
       conditionalPanel(
-        condition = "input.pcaColorCat == true",
+        condition = "input.pcaColorType == category",
         numericInput("npcaColorCat", "Number of categories:", 4)
       ),
       HTML('<br><br><br>'),
@@ -196,15 +229,10 @@ shinyServer(function(input, output) {
 
   # generate PCA plot
   plotPca <- function(){
-    colorV <- as.numeric(as.factor(allData()[,which(colnames(allData())==input$pcaColorVariable)]))
-    if (input$pcaColorCat){
-      colorV<-as.numeric(cut(allData()[,which(colnames(allData())==input$pcaColorVariable)], input$npcaColorCat))
-    }
-    if (input$pcaGradientColor){
-      colorV<-colorRampPalette(c("blue", "black", "red"))(length(unique(colorV)))[colorV]
-    }
+    colorVariable<-which(colnames(allData())==input$pcaColorVariable)
+    colorV<-getColor(allData()[,colorVariable], type=input$pcaColorType, numCat=input$npcaColorCat)
+    
     principalComponents <- as.matrix(microbeData()) %*% as.matrix(eigen(cov(microbeData()))$vectors)
-    # col<-rainbow(input$npcaCol+10)[1:length(input$npcaCol)]
     plot(principalComponents[,input$pcX], 
          principalComponents[,input$pcY], 
          xlab=paste("Principal component", input$pcX, sep=" "), 
@@ -309,10 +337,13 @@ shinyServer(function(input, output) {
       sliderInput("clusterCutHeight", "Subtree cut height:", min=0.0, max=1.0, value=0.5),
       numericInput("clusterGroup", "Select subtree", 1),
       selectInput("clusterColorVariable", "Color variable:", choices = colnames(allData())),
-      checkboxInput("clusterGradientColor", "Use color gradient", FALSE),
-      checkboxInput("clusterColorCat", "Categorize color variable", FALSE),
+      radioButtons("clusterColorType", "Color options:", 
+                   list("Unique" = "unique",
+                        "Gradient" = "gradient",
+                        "Cagetories" = "category")
+      ),
       conditionalPanel(
-        condition = "input.clusterColorCat == true",
+        condition = "input.clusterColorType == category",
         numericInput("nclusterColorCat", "Number of categories:", 4)
       ),
       radioButtons("clusterChoice", "Select features that define samples", 
@@ -358,13 +389,8 @@ shinyServer(function(input, output) {
   })
 
   plotCompleteTree<-function(){
-    colorV <- as.numeric(as.factor(allData()[,which(colnames(allData())==input$clusterColorVariable)]))
-    if (input$clusterColorCat){
-      colorV<-as.numeric(cut(allData()[,which(colnames(allData())==input$clusterColorVariable)], input$nclusterColorCat))
-    }
-    if (input$clusterGradientColor){
-      colorV<-colorRampPalette(c("blue", "black", "red"))(length(unique(colorV)))[colorV]
-    }
+    colorVariable<-which(colnames(allData())==input$clusterColorVariable)
+    colorV<-getColor(allData()[,colorVariable], type=input$clusterColorType, numCat=input$nclusterColorCat)
     plotDendroAndColors(clusterObject(), 
                         colors=data.frame(colorV), 
                         dendroLabels=F, 
@@ -374,13 +400,8 @@ shinyServer(function(input, output) {
   }
 
   plotSubTree<-function(){
-    colorV <- as.numeric(as.factor(allData()[subtreeGroups()==input$clusterGroup,which(colnames(allData())==input$clusterColorVariable)]))
-    if (input$clusterColorCat){
-      colorV<-as.numeric(cut(allData()[subtreeGroups()==input$clusterGroup,which(colnames(allData())==input$clusterColorVariable)], input$nclusterColorCat))
-    }
-    if (input$clusterGradientColor){
-      colorV<-colorRampPalette(c("blue", "black", "red"))(length(unique(colorV)))[colorV]
-    }
+    colorVariable<-which(colnames(allData())==input$clusterColorVariable)
+    colorV<-getColor(allData()[,colorVariable], type=input$clusterColorType, numCat=input$nclusterColorCat)
     plotDendroAndColors(subtreeObject(), 
                         colors=data.frame(colorV), 
                         dendroLabels=F, 
@@ -438,8 +459,7 @@ shinyServer(function(input, output) {
   
   plotDendrogram <- function(){
     groups<-cutreeDynamic(dendro=hdADJ(), distM=dADJ(), minClusterSize=3,method="tree",cutHeight=input$cutLevel)
-    ng<-length(unique(groups))
-    moduleColors<-(rainbow(ng+3)[1:ng])[groups+1]
+    moduleColors<-getColor(groups, "unique")
     plotDendroAndColors(hdADJ(), 
                         colors=data.frame(moduleColors), 
                         dendroLabels=F, 
@@ -514,10 +534,13 @@ output$heatmapVariableSelection <- renderUI({
                The taxa are ranked by the sum of abundance across samples."),
       sliderInput("numberHeatmapTaxa", "Number of taxa:", min=3, max=100, value=20),
       selectInput("heatmapSideColorVariable", "Side color variable:", choices = colnames(allData())),
-      checkboxInput("heatmapGradientColor", "Use color gradient", FALSE),
-      checkboxInput("heatmapColorCat", "Categorize color variable", FALSE),
+      radioButtons("heatmapColorType", "Color options:", 
+                   list("Unique" = "unique",
+                        "Gradient" = "gradient",
+                        "Cagetories" = "category")
+      ),
       conditionalPanel(
-        condition = "input.heatmapColorCat == true",
+        condition = "input.heatmapColorType == category",
         numericInput("nheatmapColorCat", "Number of categories:", 4)
       ),
       HTML('<hr>'),
@@ -528,14 +551,10 @@ output$heatmapVariableSelection <- renderUI({
   })
 
   plotHeatmap<-function(){
-    colorV <- as.numeric(as.factor(allData()[,which(colnames(allData())==input$heatmapSideColorVariable)]))
-    if (input$heatmapColorCat){
-      colorV<-as.numeric(cut(allData()[,which(colnames(allData())==input$heatmapSideColorVariable)], input$nheatmapColorCat))
-    }
-    if (input$heatmapGradientColor){
-      colorV<-colorRampPalette(c("blue", "black", "red"))(length(unique(colorV)))[colorV]
-    }
-    heatmapTempData<-microbeData()[order(apply(microbeData(), 1, sum), decreasing=T), ]
+    colorVariable<-which(colnames(allData())==input$heatmapSideColorVariable)
+    colorV<-getColor(allData()[,colorVariable], type=input$heatmapColorType, numCat=input$nheatmapColorCat)
+    
+    heatmapTempData<-microbeData()[order(apply(microbeData(), 1, sum), decreasing=T), 1:input$numberHeatmapTaxa]
     heatmapData<-t(apply(heatmapTempData, 2, as.numeric))
     colnames(heatmapData)<-row.names(heatmapTempData)
   
@@ -544,7 +563,7 @@ output$heatmapVariableSelection <- renderUI({
     colorV<-colorV[match(tempclust$labels, row.names(microbeData()))]
     ##
     
-    heatmap.2(heatmapData[1:input$numberHeatmapTaxa,], scale="none", trace="none",
+    heatmap.2(heatmapData, scale="none", trace="none",
               lmat = cbind(c(4,2,1),c(5,3,0)), lwid=c(4,1), lhei = c(1,4,0.5), 
               Rowv=NA, dendrogram="column", ColSideColors=colorV)
   
