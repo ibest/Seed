@@ -22,8 +22,10 @@ shinyServer(function(input, output) {
     rainbow(n+3)[1:n]
   }
   
-  # generate color vector for plots. Returns both color vector and value vector (for use in legends)
+  # generate color vector for plots. Returns both color vector and value vector (for use in legends).
+  # numeric values are truncated to 6 digits
   getColor<-function(featureVector, type="unique", numCat=1){
+    if (is.numeric(featureVector)) featureVector<-round(featureVector, 3)
     if (type == "unique"){
       valueVector<-as.factor(featureVector)
       if (length(levels(valueVector))<=8){
@@ -59,12 +61,11 @@ shinyServer(function(input, output) {
     }else{
       par(mar=c(0,2,0,2)+0.1)
       plot(c(0,1),c(0,1),type = 'n', axes = F,xlab = '', ylab = '', main = "")
-      # this is an awkward way to get color-value pairs. It assumes 'ZzzXzpLzzZ' doesn't occur in any string.
-      pairsList<-strsplit(unique(paste(valueVector,colorVector, sep='ZzzXzpLzzZ')), split='ZzzXzpLzzZ')
-      values<-sapply(pairsList, function(i) i[1])
-      colors<-sapply(pairsList, function(i) i[2])
+      uniquePairs<-match(levels(as.factor(valueVector)), valueVector)
+      values<-levels(as.factor(valueVector))
+      colors<-colorVector[uniquePairs]
       legend("center", legend=values, fill=colors, 
-             ncol=min(length(colors), 6), 
+             ncol=min(length(colors), 8), 
              box.col="white", title=title)
     }
   }
