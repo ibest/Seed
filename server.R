@@ -19,7 +19,8 @@ shinyServer(function(input, output) {
     colorRampPalette(c("blue", "red"))(n)
   }
   discreteColors<-function(n){
-    rainbow(n+3)[1:n]
+    trim<-as.integer(n*0.1)+3   # prevents color overlap at ends of rainbow
+    rainbow(n+trim)[1:n]
   }
   
   # generate color vector for plots. Returns both color vector and value vector (for use in legends).
@@ -70,6 +71,11 @@ shinyServer(function(input, output) {
     }
   }
 
+  # tests to see if file is square (if it has column names for every column)
+  isSquare<-function(filename, sep){
+    test<-sapply(sapply(readLines(filename,2), function(i) strsplit(i,sep)), length)
+    return(test[1]==test[2])
+  }
 #####################################################################################################
 ############################################# DATA ##################################################
 #####################################################################################################
@@ -79,6 +85,10 @@ shinyServer(function(input, output) {
     microbeFile <- input$microbeFilename$datapath
     if (is.null(microbeFile)) return(NULL)
     microbeData <- read.csv(microbeFile, header=input$microbeHeader, sep=input$microbeSep, quote=input$microbeQuote) 
+    if (isSquare(microbeFile, input$microbeSep)){
+      row.names(microbeData)<-microbeData[,1]
+      microbeData<-microbeData[,-1]
+    }
     if (input$relativize){
       microbeData <- t(apply(microbeData, 1, function(i) i/sum(i)))
     }
@@ -96,6 +106,10 @@ shinyServer(function(input, output) {
     metaFile <- input$metaFilename$datapath
     if (is.null(metaFile)) return(NULL)
     metaData <- read.csv(metaFile, header=input$metaHeader, sep=input$metaSep, quote=input$metaQuote)
+    if (isSquare(metaFile, input$metaSep)){
+      row.names(metaData)<-metaData[,1]
+      metaData<-metaData[,-1]
+    }
     if (is.null(input$microbeFilename$datapath)) return(metaData)
     cbind(metaData,
       shannonDiversity=diversity(microbeData(), index="shannon"),
@@ -609,7 +623,7 @@ output$heatmapVariableSelection <- renderUI({
     CVlist<-getColor(allData()[,colorVariable], type=input$heatmapColorType, numCat=input$nheatmapColorCat)
     colorV <- CVlist[[1]]
     valueV <- CVlist[[2]]
-    heatmapTempData<-microbeData()[order(apply(microbeData(), 1, sum), decreasing=T), 1:input$numberHeatmapTaxa]
+    heatmapTempData<-(microbeData()[,order(apply(microbeData(), 2, sum), decreasing=T)])[,1:input$numberHeatmapTaxa]
     heatmapData<-t(apply(heatmapTempData, 2, as.numeric))
     colnames(heatmapData)<-row.names(heatmapTempData)
   
