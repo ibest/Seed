@@ -232,7 +232,7 @@ shinyServer(function(input, output) {
          col=colorV
     )
     plotLegend(colorV, valueV, gradient=(input$scatterColorType=="gradient"), 
-               title=input$scatterColorVariable, min=min(as.numeric(valueV)), max=max(as.numeric(valueV)))
+               title=input$scatterColorVariable, min=min(as.numeric(valueV), na.rm=T), max=max(as.numeric(valueV), na.rm=T))
   }
   
   # save scatter plot
@@ -293,7 +293,7 @@ shinyServer(function(input, output) {
          col=colorV
     )
     plotLegend(colorV, valueV, gradient=(input$pcaColorType=="gradient"), 
-               title=input$pcaColorVariable, min=min(as.numeric(valueV)), max=max(as.numeric(valueV))
+               title=input$pcaColorVariable, min=min(as.numeric(valueV), na.rm=T), max=max(as.numeric(valueV), na.rm=T)
     )
   }
 
@@ -421,11 +421,17 @@ shinyServer(function(input, output) {
     if (input$clusterChoice == "Custom"){
       data <- allData()[,match(input$customClusterVariables, colnames(allData()))]
     }
+    # non-numeric values cause cluster plot to fail. This converts them to numbers
+    # apply statements fail for unknown reasons
+    for (column in 1:ncol(data)){
+      data[,column]<-as.numeric(data[,column])
+    }
+
     data
   })
   
   clusterDist <- reactive({
-    vegdist(clusterData(), method=input$distMethod)
+    vegdist(clusterData(), method=input$distMethod, na.rm=T)
   })
   clusterObject <- reactive({
     hclust(clusterDist(), method=input$hclustMethod)
@@ -437,7 +443,7 @@ shinyServer(function(input, output) {
     clusterData()[subtreeGroups()==input$clusterGroup,]
   })
   subtreeDist <- reactive({
-    vegdist(subtreeData(), method=input$distMethod)
+    vegdist(subtreeData(), method=input$distMethod, na.rm=T)
   })
   subtreeObject <- reactive({
     hclust(subtreeDist(), method=input$hclustMethod)
@@ -457,7 +463,7 @@ shinyServer(function(input, output) {
                         main="",
                         setLayout=FALSE)
     plotLegend(colorV, valueV, gradient=(input$clusterColorType=="gradient"), 
-               title=input$clusterColorVariable, min=min(as.numeric(valueV)), max=max(as.numeric(valueV)))
+               title=input$clusterColorVariable, min=min(as.numeric(valueV), na.rm=T), max=max(as.numeric(valueV), na.rm=T))
   }
 
   plotSubTree<-function(){
@@ -474,7 +480,7 @@ shinyServer(function(input, output) {
                         main="",
                         setLayout=FALSE)  
     plotLegend(colorV, valueV, gradient=(input$clusterColorType=="gradient"), 
-               title=input$clusterColorVariable, min=min(as.numeric(valueV)), max=max(as.numeric(valueV)))
+               title=input$clusterColorVariable, min=min(as.numeric(valueV), na.rm=T), max=max(as.numeric(valueV), na.rm=T))
   }
 
   output$clusterPlot <- renderPlot({
