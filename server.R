@@ -22,28 +22,52 @@ shinyServer(function(input, output) {
     rainbow(n+3)[1:n]
   }
   
-  # generate color vector for plots
+  # generate color vector for plots. Returns both color vector and value vector (for use in legends)
   getColor<-function(featureVector, type="unique", numCat=1){
     if (type == "unique"){
-      factorVector<-as.factor(featureVector)
-      if (length(levels(factorVector))<=8){
+      valueVector<-as.factor(featureVector)
+      if (length(levels(valueVector))<=8){
         colorVector<-as.numeric(featureVector)
       }else{
-        colorVector<-discreteColors(length(levels(factorVector)))[as.numeric(factorVector)]
+        colorVector<-discreteColors(length(levels(valueVector)))[as.numeric(valueVector)]
       }
     }
     if (type == "gradient"){
       # assign colors to variables in a linear manner
+      valueVector<-featureVector
       colorVector<-gradientColors(100)[as.numeric(cut(as.numeric(featureVector), 100))]
     }
     if (type == "category"){
-     if (numCat==1){colorVector<-1}
-     if (numCat<=8 && numCat>1){ colorVector<-as.numeric(cut(as.numeric(featureVector), numCat)) }
-     if (numCat>8){ colorVector<-discreteColors(numCat)[as.numeric(cut(as.numeric(featureVector), numCat))] }
+      valueVector<-cut(as.numeric(featureVector), numCat)
+      if (numCat==1){colorVector<-1}
+      if (numCat<=8 && numCat>1){ colorVector<- as.numeric(valueVector) }
+      if (numCat>8){ colorVector<-discreteColors(numCat)[as.numeric(valueVector)] }
     }
-    return(colorVector)
+    return(list(colorVector, valueVector))
   }
 
+  # plot legend
+  plotLegend<-function(colorVector, valueVector, gradient=F, title="", min=0, max=1){
+    if (gradient){
+      par(mar=c(6,4,2,2)+0.1)
+      plot(c(0,1),c(0,1),type = 'n', axes = F,xlab = '', ylab = '', main = title)
+      legend_image <- as.raster(matrix(gradientColors(100), ncol=100))
+      rasterImage(legend_image, 0, 0, 1, 1)
+      axis(side=1, at=seq(0,1,l=5), labels=seq(min,max,l=5),col.axis="black")
+      mtext("Key", side=2, las=2)
+      
+    }else{
+      par(mar=c(0,2,0,2)+0.1)
+      plot(c(0,1),c(0,1),type = 'n', axes = F,xlab = '', ylab = '', main = "")
+      # this is an awkward way to get color-value pairs. It assumes 'ZzzXzpLzzZ' doesn't occur in any string.
+      pairsList<-strsplit(unique(paste(valueVector,colorVector, sep='ZzzXzpLzzZ')), split='ZzzXzpLzzZ')
+      values<-sapply(pairsList, function(i) i[1])
+      colors<-sapply(pairsList, function(i) i[2])
+      legend("center", legend=values, fill=colors, 
+             ncol=min(length(colors), 6), 
+             box.col="white", title=title)
+    }
+  }
 
 #####################################################################################################
 ############################################# DATA ##################################################
@@ -179,8 +203,12 @@ shinyServer(function(input, output) {
   
   # generate scatter plot
   plotScatter<-function(){
+    layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
+    
     colorVariable<-which(colnames(allData())==input$scatterColorVariable)
-    colorV<-getColor(allData()[,colorVariable], type=input$scatterColorType, numCat=input$nscatterColorCat)
+    CVlist <- getColor(allData()[,colorVariable], type=input$scatterColorType, numCat=input$nscatterColorCat)
+    colorV <- CVlist[[1]]
+    valueV <- CVlist[[2]]
     plot(as.numeric(allData()[,which(colnames(allData())==input$variable1)]), 
          as.numeric(allData()[,which(colnames(allData())==input$variable2)]), 
          xlab=input$variable1, 
@@ -188,6 +216,8 @@ shinyServer(function(input, output) {
          main=paste("Scatterplot of", input$variable2, "vs.", input$variable1, sep=" "),
          col=colorV
     )
+    plotLegend(colorV, valueV, gradient=(input$scatterColorType=="gradient"), 
+               title=input$scatterColorVariable, min=min(as.numeric(valueV)), max=max(as.numeric(valueV)))
   }
   
   # save scatter plot
@@ -233,9 +263,12 @@ shinyServer(function(input, output) {
 
   # generate PCA plot
   plotPca <- function(){
-    colorVariable<-which(colnames(allData())==input$pcaColorVariable)
-    colorV<-getColor(allData()[,colorVariable], type=input$pcaColorType, numCat=input$npcaColorCat)
+    layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
     
+    colorVariable<-which(colnames(allData())==input$pcaColorVariable)
+    CVlist<-getColor(allData()[,colorVariable], type=input$pcaColorType, numCat=input$npcaColorCat)
+    colorV <- CVlist[[1]]
+    valueV <- CVlist[[2]]
     principalComponents <- as.matrix(microbeData()) %*% as.matrix(eigen(cov(microbeData()))$vectors)
     plot(principalComponents[,input$pcX], 
          principalComponents[,input$pcY], 
@@ -243,6 +276,9 @@ shinyServer(function(input, output) {
          ylab=paste("Principal component", input$pcY, sep=" "), 
          main=paste("Scatter plot of principal components"),
          col=colorV
+    )
+    plotLegend(colorV, valueV, gradient=(input$pcaColorType=="gradient"), 
+               title=input$pcaColorVariable, min=min(as.numeric(valueV)), max=max(as.numeric(valueV))
     )
   }
 
@@ -394,24 +430,36 @@ shinyServer(function(input, output) {
 
   plotCompleteTree<-function(){
     colorVariable<-which(colnames(allData())==input$clusterColorVariable)
-    colorV<-getColor(allData()[,colorVariable], type=input$clusterColorType, numCat=input$nclusterColorCat)
+    CVlist<-getColor(allData()[,colorVariable], type=input$clusterColorType, numCat=input$nclusterColorCat)
+    colorV <- CVlist[[1]]
+    valueV <- CVlist[[2]]
+    layout(matrix(c(1,2,3,1,2,3),ncol=2), height = c(4,1,1),width = c(4,4))
     plotDendroAndColors(clusterObject(), 
                         colors=data.frame(colorV), 
                         dendroLabels=F, 
                         abHeight=input$clusterCutHeight*max(clusterObject()$height), 
                         groupLabels=input$clusterColorVariable,
-                        main="Species dendrogram and module colors")  
+                        main="",
+                        setLayout=FALSE)
+    plotLegend(colorV, valueV, gradient=(input$clusterColorType=="gradient"), 
+               title=input$clusterColorVariable, min=min(as.numeric(valueV)), max=max(as.numeric(valueV)))
   }
 
   plotSubTree<-function(){
     colorVariable<-which(colnames(allData())==input$clusterColorVariable)
-    colorV<-getColor(allData()[subtreeGroups()==input$clusterGroup,colorVariable], 
+    CVlist<-getColor(allData()[subtreeGroups()==input$clusterGroup,colorVariable], 
                      type=input$clusterColorType, numCat=input$nclusterColorCat)
+    colorV <- CVlist[[1]]
+    valueV <- CVlist[[2]]
+    layout(matrix(c(1,2,3,1,2,3),ncol=2), height = c(4,1,1),width = c(4,4))
     plotDendroAndColors(subtreeObject(), 
                         colors=data.frame(colorV), 
                         dendroLabels=F, 
                         groupLabels=input$clusterColorVariable,
-                        main="Species dendrogram and module colors")  
+                        main="",
+                        setLayout=FALSE)  
+    plotLegend(colorV, valueV, gradient=(input$clusterColorType=="gradient"), 
+               title=input$clusterColorVariable, min=min(as.numeric(valueV)), max=max(as.numeric(valueV)))
   }
 
   output$clusterPlot <- renderPlot({
@@ -464,7 +512,7 @@ shinyServer(function(input, output) {
   
   plotDendrogram <- function(){
     groups<-cutreeDynamic(dendro=hdADJ(), distM=dADJ(), minClusterSize=3,method="tree",cutHeight=input$cutLevel)
-    moduleColors<-getColor(groups, "unique")
+    moduleColors<-getColor(groups, "unique")[[1]]
     plotDendroAndColors(hdADJ(), 
                         colors=data.frame(moduleColors), 
                         dendroLabels=F, 
@@ -557,8 +605,9 @@ output$heatmapVariableSelection <- renderUI({
 
   plotHeatmap<-function(){
     colorVariable<-which(colnames(allData())==input$heatmapSideColorVariable)
-    colorV<-getColor(allData()[,colorVariable], type=input$heatmapColorType, numCat=input$nheatmapColorCat)
-    
+    CVlist<-getColor(allData()[,colorVariable], type=input$heatmapColorType, numCat=input$nheatmapColorCat)
+    colorV <- CVlist[[1]]
+    valueV <- CVlist[[2]]
     heatmapTempData<-microbeData()[order(apply(microbeData(), 1, sum), decreasing=T), 1:input$numberHeatmapTaxa]
     heatmapData<-t(apply(heatmapTempData, 2, as.numeric))
     colnames(heatmapData)<-row.names(heatmapTempData)
