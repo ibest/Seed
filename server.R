@@ -89,10 +89,10 @@ shinyServer(function(input, output) {
       row.names(microbeData)<-microbeData[,1]
       microbeData<-microbeData[,-1]
     }
-    if (input$relativize){
+    if (input$dataConvert=="relative"){
       microbeData <- t(apply(microbeData, 1, function(i) i/sum(i)))
     }
-    if (input$presenceAbsence){
+    if (input$dataConvert=="presence"){
       rn<-row.names(microbeData)
       microbeData<-apply(microbeData, 2, function(i) as.numeric(as.logical(i)))
       row.names(microbeData)<-rn
@@ -112,9 +112,9 @@ shinyServer(function(input, output) {
     }
     if (is.null(input$microbeFilename$datapath)) return(metaData)
     cbind(metaData,
-      shannonDiversity=diversity(microbeData(), index="shannon"),
-      simpsonDiversity=diversity(microbeData(), index="simpson"),
-      inverseSimpsonDiversity=diversity(microbeData(), index="invsimpson")
+      Shannon.diversity=diversity(microbeData(), index="shannon"),
+      Simpson.diversity=diversity(microbeData(), index="simpson"),
+      inverse.Simpson.diversity=diversity(microbeData(), index="invsimpson")
     ) 
   })
   
@@ -171,6 +171,7 @@ shinyServer(function(input, output) {
     hist(as.numeric(allData()[,which(colnames(allData())==input$variable)]), 
          breaks=input$breaks, 
          xlab=input$variable, 
+         ylab="Number of occurances",
          main=paste("Histogram of", input$variable, sep=" "))
   }
   
@@ -276,6 +277,20 @@ shinyServer(function(input, output) {
     )
   })
 
+  pcaObject<-reactive({
+    princomp(microbeData())
+  })
+  pcX<-reactive({
+    pcaObject()$scores[,input$pcX]
+  })
+  pcY<-reactive({
+    pcaObject()$scores[,input$pcY]
+  })
+  # % variation explained
+  pcaPV<-reactive({
+    vars<-(pcaObject()$sdev)^2
+    round(vars/sum(vars)*100, digits=2)
+  })
   # generate PCA plot
   plotPca <- function(){
     layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
@@ -284,11 +299,9 @@ shinyServer(function(input, output) {
     CVlist<-getColor(allData()[,colorVariable], type=input$pcaColorType, numCat=input$npcaColorCat)
     colorV <- CVlist[[1]]
     valueV <- CVlist[[2]]
-    principalComponents <- as.matrix(microbeData()) %*% as.matrix(eigen(cov(microbeData()))$vectors)
-    plot(principalComponents[,input$pcX], 
-         principalComponents[,input$pcY], 
-         xlab=paste("Principal component", input$pcX, sep=" "), 
-         ylab=paste("Principal component", input$pcY, sep=" "), 
+    plot(pcX(), pcY(), 
+         xlab=paste("Principal component ", input$pcX, " (", pcaPV()[input$pcX], "%)", sep=""), 
+         ylab=paste("Principal component ", input$pcY, " (", pcaPV()[input$pcY], "%)", sep=""), 
          main=paste("Scatter plot of principal components"),
          col=colorV
     )
@@ -389,8 +402,6 @@ shinyServer(function(input, output) {
                               "gower", "altGower", "morisita", "horn", "mountford", "raup", "binomial", "chao", "cao")),
       selectInput("hclustMethod", "Cluster method:", 
                   choices = c("ward", "single", "complete", "average", "mcquitty", "median", "centroid")),
-      sliderInput("clusterCutHeight", "Subtree cut height:", min=0.0, max=1.0, value=0.5),
-      numericInput("clusterGroup", "Select subtree", 1),
       selectInput("clusterColorVariable", "Color variable:", choices = colnames(allData())),
       radioButtons("clusterColorType", "Color options:", 
                    list("Unique" = "unique",
@@ -401,6 +412,10 @@ shinyServer(function(input, output) {
         condition = 'input.clusterColorType == "category"',
         numericInput("nclusterColorCat", "Number of categories:", 4)
       ),
+      helpText("The complete tree is cut into subtrees at the red line."),
+      sliderInput("clusterCutHeight", "Subtree cut height:", min=0.0, max=1.0, value=0.5),
+      numericInput("clusterGroup", "Select subtree", 1),
+      
       radioButtons("clusterChoice", "Select features that define samples", 
                    choices=c("Metadata", "Microbe data", "All data", "Custom"), selected="Microbe data"),
       conditionalPanel(
@@ -475,7 +490,7 @@ shinyServer(function(input, output) {
     layout(matrix(c(1,2,3,1,2,3),ncol=2), height = c(4,1,1),width = c(4,4))
     plotDendroAndColors(subtreeObject(), 
                         colors=data.frame(colorV), 
-                        dendroLabels=F, 
+                        dendroLabels=NULL, 
                         groupLabels=input$clusterColorVariable,
                         main="",
                         setLayout=FALSE)  

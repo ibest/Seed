@@ -28,11 +28,16 @@ shinyUI(pageWithSidebar(
           condition = "input.microbeOptions == true",
           checkboxInput('microbeHeader', 'Header', TRUE),
           selectInput('microbeSep', 'Separator', c(Comma=',', Semicolon=';', Tab='\t'), 'Comma'),
-          selectInput('microbeQuote', 'Quote', c(None='', 'Double Quote'='"', 'Single Quote'="'"), 'Double Quote'),
-          checkboxInput("relativize", "Convert microbeData to relative abundance", FALSE),
-          checkboxInput("presenceAbsence", "Convert microbeData to presence/absence", FALSE)
-
+          selectInput('microbeQuote', 'Quote', c(None='', 'Double Quote'='"', 'Single Quote'="'"), 'Double Quote')
         ),
+        HTML('<hr>'),
+        
+        radioButtons("dataConvert", "Convert data to:", 
+                     list("None"="none",
+                          "Relative abundance" = "relative",
+                          "Presence/absence" = "presence")
+        ),
+        
         HTML('<hr>'),
         
         helpText("Input data must be in two files. The metadata file should include sample information. 
