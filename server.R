@@ -203,7 +203,7 @@ shinyServer(function(input, output) {
       radioButtons("scatterColorType", "Color options:", 
                   list("Unique" = "unique",
                        "Gradient" = "gradient",
-                       "Cagetories" = "category")
+                       "Categories" = "category")
       ),
       conditionalPanel(
         condition = 'input.scatterColorType == "category"',
@@ -263,7 +263,7 @@ shinyServer(function(input, output) {
       radioButtons("pcaColorType", "Color options:", 
                    list("Unique" = "unique",
                         "Gradient" = "gradient",
-                        "Cagetories" = "category")
+                        "Categories" = "category")
       ),
       conditionalPanel(
         condition = 'input.pcaColorType == "category"',
@@ -395,7 +395,7 @@ shinyServer(function(input, output) {
       radioButtons("clusterColorType", "Color options:", 
                    list("Unique" = "unique",
                         "Gradient" = "gradient",
-                        "Cagetories" = "category")
+                        "Categories" = "category")
       ),
       conditionalPanel(
         condition = 'input.clusterColorType == "category"',
@@ -611,7 +611,7 @@ output$heatmapVariableSelection <- renderUI({
       radioButtons("heatmapColorType", "Color options:", 
                    list("Unique" = "unique",
                         "Gradient" = "gradient",
-                        "Cagetories" = "category")
+                        "Categories" = "category")
       ),
       conditionalPanel(
         condition = 'input.heatmapColorType == "category"',
