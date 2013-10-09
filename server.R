@@ -50,14 +50,14 @@ shinyServer(function(input, output) {
   }
 
   # plot legend
-  plotLegend<-function(colorVector, valueVector, gradient=F, title="", min=0, max=1){
+  plotLegend<-function(colorVector, valueVector, gradient=F, title="", min=0, max=1, cex=1){
     if (gradient){
       par(mar=c(6,4,2,2)+0.1)
-      plot(c(0,1),c(0,1),type = 'n', axes = F,xlab = '', ylab = '', main = title)
+      plot(c(0,1),c(0,1),type = 'n', axes = F,xlab = '', ylab = '', main = title, cex.main=cex)
       legend_image <- as.raster(matrix(gradientColors(100), ncol=100))
       rasterImage(legend_image, 0, 0, 1, 1)
-      axis(side=1, at=seq(0,1,l=5), labels=seq(min,max,l=5),col.axis="black")
-      mtext("Key", side=2, las=2)
+      axis(side=1, at=seq(0,1,l=5), labels=seq(min,max,l=5),col.axis="black", cex.axis=cex)
+      mtext("Key", side=2, las=2, cex=cex)
       
     }else{
       par(mar=c(0,2,0,2)+0.1)
@@ -66,8 +66,9 @@ shinyServer(function(input, output) {
       values<-levels(as.factor(valueVector))
       colors<-colorVector[uniquePairs]
       legend("center", legend=values, fill=colors, 
-             ncol=min(length(colors), 8), 
-             box.col="white", title=title)
+             ncol=min(length(colors), 5), 
+             box.col="white", title=title,
+             cex=cex)
     }
   }
 
@@ -76,6 +77,26 @@ shinyServer(function(input, output) {
     test<-sapply(sapply(readLines(filename,2), function(i) strsplit(i,sep)), length)
     return(test[1]==test[2])
   }
+
+# This isn't working for some reason
+#   # save plot function
+#   savePlot<-function(fileName="error", plotFunction, fileExt){
+#       fileName<-paste(fileName, fileExt, sep=".")
+#       if (fileExt=="png"){
+#         png(fileName, width=2000, height=2000, units="px")
+#         plotFunction()
+#         print(fileName)
+#         dev.off()
+#       }
+#       if (fileExt=="pdf"){
+#         pdf(fileName, width=10, height=10)
+#         plotFunction()
+#         print(fileName)
+#         dev.off()
+#       }
+#   }
+
+
 #####################################################################################################
 ############################################# DATA ##################################################
 #####################################################################################################
@@ -86,8 +107,12 @@ shinyServer(function(input, output) {
     if (is.null(microbeFile)) return(NULL)
     microbeData <- read.csv(microbeFile, header=input$microbeHeader, sep=input$microbeSep, quote=input$microbeQuote) 
     if (isSquare(microbeFile, input$microbeSep)){
-      row.names(microbeData)<-microbeData[,1]
-      microbeData<-microbeData[,-1]
+      # This is a strange way to do this, but it fixes single column file quirks
+      rn<-microbeData[,1]
+      cn<-colnames(microbeData)
+      microbeData<-as.data.frame(microbeData[,-1])
+      row.names(microbeData)<-rn
+      colnames(microbeData)<-cn[-1]
     }
     if (input$dataConvert=="relative"){
       microbeData <- t(apply(microbeData, 1, function(i) i/sum(i)))
@@ -107,8 +132,12 @@ shinyServer(function(input, output) {
     if (is.null(metaFile)) return(NULL)
     metaData <- read.csv(metaFile, header=input$metaHeader, sep=input$metaSep, quote=input$metaQuote)
     if (isSquare(metaFile, input$metaSep)){
-      row.names(metaData)<-metaData[,1]
-      metaData<-metaData[,-1]
+      # elaborate to prevent single column file errors
+      rn<-metaData[,1]
+      cn<-colnames(metaData)
+      metaData<-as.data.frame(metaData[,-1])
+      row.names(metaData)<-rn
+      colnames(metaData)<-cn[-1]
     }
     if (is.null(input$microbeFilename$datapath)) return(metaData)
     cbind(metaData,
@@ -172,16 +201,25 @@ shinyServer(function(input, output) {
          breaks=input$breaks, 
          xlab=input$variable, 
          ylab="Number of occurances",
-         main=paste("Histogram of", input$variable, sep=" "))
+         main=paste("Histogram of", input$variable, sep=" "),
+         cex.axis=fontSize(), cex.main=fontSize(), cex.lab=fontSize()
+    )
   }
   
   # save histogram plot
   output$saveHist <- downloadHandler(
-    filename = function() { paste("hist", '.pdf', sep='') },
+    filename = function() { paste("histogramPlot", fileExtension(), sep=".") },
     content = function(filename) {
-      pdf(filename, width=10, height=10)
+      if (fileExtension()=="png"){
+        png(filename, width=2000, height=2000, units="px")
         plotHistogram()
-      dev.off()
+        dev.off()
+      }
+      if (fileExtension()=="pdf"){
+        pdf(filename, width=10, height=10)
+        plotHistogram()
+        dev.off()
+      }
     }
   )
   
@@ -230,19 +268,29 @@ shinyServer(function(input, output) {
          xlab=input$variable1, 
          ylab=input$variable2, 
          main=paste("Scatterplot of", input$variable2, "vs.", input$variable1, sep=" "),
-         col=colorV
+         col=colorV,
+         cex.axis=fontSize(), cex.main=fontSize(), cex.lab=fontSize()
     )
     plotLegend(colorV, valueV, gradient=(input$scatterColorType=="gradient"), 
-               title=input$scatterColorVariable, min=min(as.numeric(valueV), na.rm=T), max=max(as.numeric(valueV), na.rm=T))
+               title=input$scatterColorVariable, min=min(as.numeric(valueV), na.rm=T), 
+               max=max(as.numeric(valueV), na.rm=T), cex=fontSize()
+    )
   }
   
   # save scatter plot
   output$saveScatter <- downloadHandler(
-    filename = function() { paste("scatter", '.pdf', sep='') },
+    filename = function() { paste("scatterPlot", fileExtension(), sep=".") },
     content = function(filename) {
-      pdf(filename, width=10, height=10)
-      plotScatter()
-      dev.off()
+      if (fileExtension()=="png"){
+        png(filename, width=2000, height=2000, units="px")
+        plotScatter()
+        dev.off()
+      }
+      if (fileExtension()=="pdf"){
+        pdf(filename, width=10, height=10)
+        plotScatter()
+        dev.off()
+      }
     }
   )
   
@@ -278,17 +326,17 @@ shinyServer(function(input, output) {
   })
 
   pcaObject<-reactive({
-    princomp(microbeData())
+    as.matrix(microbeData()) %*% as.matrix(eigen(cov(microbeData()))$vectors)
   })
   pcX<-reactive({
-    pcaObject()$scores[,input$pcX]
+    pcaObject()[,input$pcX]
   })
   pcY<-reactive({
-    pcaObject()$scores[,input$pcY]
+    pcaObject()[,input$pcY]
   })
   # % variation explained
   pcaPV<-reactive({
-    vars<-(pcaObject()$sdev)^2
+    vars<-apply(pcaObject(), 2, sd)^2
     round(vars/sum(vars)*100, digits=2)
   })
   # generate PCA plot
@@ -303,20 +351,29 @@ shinyServer(function(input, output) {
          xlab=paste("Principal component ", input$pcX, " (", pcaPV()[input$pcX], "%)", sep=""), 
          ylab=paste("Principal component ", input$pcY, " (", pcaPV()[input$pcY], "%)", sep=""), 
          main=paste("Scatter plot of principal components"),
-         col=colorV
+         col=colorV,
+         cex.axis=fontSize(), cex.main=fontSize(), cex.lab=fontSize()
     )
     plotLegend(colorV, valueV, gradient=(input$pcaColorType=="gradient"), 
-               title=input$pcaColorVariable, min=min(as.numeric(valueV), na.rm=T), max=max(as.numeric(valueV), na.rm=T)
+               title=input$pcaColorVariable, min=min(as.numeric(valueV), na.rm=T), 
+               max=max(as.numeric(valueV), na.rm=T), cex=fontSize()
     )
   }
 
   # sacce PCA plot
   output$savePca <- downloadHandler(
-    filename = function() { paste("PCA", '.pdf', sep='') },
+    filename = function() { paste("PCAplot", fileExtension(), sep=".") },
     content = function(filename) {
-      pdf(filename, width=10, height=10)
-      plotPca()
-      dev.off()
+      if (fileExtension()=="png"){
+        png(filename, width=2000, height=2000, units="px")
+        plotPca()
+        dev.off()
+      }
+      if (fileExtension()=="pdf"){
+        pdf(filename, width=10, height=10)
+        plotPca()
+        dev.off()
+      }
     }
   )
   
@@ -371,17 +428,26 @@ shinyServer(function(input, output) {
                ylab=colnames(allData())[barVarCol], 
                ylim=c(min(means-errors), max(means+errors)),
                xpd=F,
-               col="#f5f5f5")
+               col="#f5f5f5",
+               cex.axis=fontSize(), cex.names=fontSize(), cex.lab=fontSize()
+    )
     arrows(x,means+errors,x,means-errors,code=0)
-    text(x,min(means-errors)+(max(means+errors)-min(means-errors))/20, ns, col="blue")
+    text(x,min(means-errors)+(max(means+errors)-min(means-errors))/20, ns, col="blue", cex=fontSize())
   }
 
   output$saveBar <- downloadHandler(
-    filename = function() { paste("barPlot", '.pdf', sep='') },
+    filename = function() { paste("barPlot", fileExtension(), sep=".") },
     content = function(filename) {
-      pdf(filename, width=10, height=10)
-      plotBar()
-      dev.off()
+      if (fileExtension()=="png"){
+        png(filename, width=2000, height=2000, units="px")
+        plotBar()
+        dev.off()
+      }
+      if (fileExtension()=="pdf"){
+        pdf(filename, width=10, height=10)
+        plotBar()
+        dev.off()
+      }
     }
   )
   
@@ -476,9 +542,14 @@ shinyServer(function(input, output) {
                         abHeight=input$clusterCutHeight*max(clusterObject()$height), 
                         groupLabels=input$clusterColorVariable,
                         main="",
-                        setLayout=FALSE)
+                        setLayout=FALSE, 
+                        cex.colorLabels=fontSize(), cex.dendroLabels=fontSize(),
+                        cex.rowText=fontSize(), cex.axis=fontSize(), cex.lab=fontSize()
+    )
     plotLegend(colorV, valueV, gradient=(input$clusterColorType=="gradient"), 
-               title=input$clusterColorVariable, min=min(as.numeric(valueV), na.rm=T), max=max(as.numeric(valueV), na.rm=T))
+               title=input$clusterColorVariable, min=min(as.numeric(valueV), na.rm=T), 
+               max=max(as.numeric(valueV), na.rm=T), cex=fontSize()
+    )
   }
 
   plotSubTree<-function(){
@@ -493,9 +564,14 @@ shinyServer(function(input, output) {
                         dendroLabels=NULL, 
                         groupLabels=input$clusterColorVariable,
                         main="",
-                        setLayout=FALSE)  
+                        setLayout=FALSE,
+                        cex.colorLabels=fontSize(), cex.dendroLabels=fontSize(),
+                        cex.rowText=fontSize(), cex.axis=fontSize(), cex.lab=fontSize()
+    )  
     plotLegend(colorV, valueV, gradient=(input$clusterColorType=="gradient"), 
-               title=input$clusterColorVariable, min=min(as.numeric(valueV), na.rm=T), max=max(as.numeric(valueV), na.rm=T))
+               title=input$clusterColorVariable, min=min(as.numeric(valueV), na.rm=T), 
+               max=max(as.numeric(valueV), na.rm=T),cex=fontSize()
+    )
   }
 
   output$clusterPlot <- renderPlot({
@@ -507,13 +583,26 @@ shinyServer(function(input, output) {
   })
 
   output$saveCluster <- downloadHandler(
-    filename = function() { paste("clusterPlot", '.pdf', sep='') },
+    filename = function() { 
+      if (input$clusterTab=="complete"){sp<-"complete"}
+      if (input$clusterTab=="subtree"){sp<-"subtree"}
+      paste("clusterPlot", sp, fileExtension(), sep=".") 
+    },
     content = function(filename) {
-      pdf(filename, width=10, height=10)
-      if (input$clusterTab=="complete"){plotCompleteTree()}
-      if (input$clusterTab=="subtree"){plotSubTree()}
-      dev.off()
+      if (fileExtension()=="png"){
+        png(filename, width=2000, height=2000, units="px")
+        if (input$clusterTab=="complete"){plotCompleteTree()}
+        if (input$clusterTab=="subtree"){plotSubTree()}
+        dev.off()
+      }
+      if (fileExtension()=="pdf"){
+        pdf(filename, width=10, height=10)
+        if (input$clusterTab=="complete"){plotCompleteTree()}
+        if (input$clusterTab=="subtree"){plotSubTree()}
+        dev.off()
+      }
     }
+
   )
 
 #####################################################################################################
@@ -547,28 +636,31 @@ shinyServer(function(input, output) {
   hdADJ <- reactive({ hclust(dADJ(), method="average") })
   
   plotDendrogram <- function(){
-    groups<-cutreeDynamic(dendro=hdADJ(), distM=dADJ(), minClusterSize=3,method="tree",cutHeight=input$cutLevel)
+    groups<-cutreeStatic(dendro=hdADJ(), minSize=3,cutHeight=input$cutLevel)
     moduleColors<-getColor(groups, "unique")[[1]]
     plotDendroAndColors(hdADJ(), 
                         colors=data.frame(moduleColors), 
                         dendroLabels=F, 
                         abHeight=input$cutLevel, 
-                        main="Species dendrogram and module colors")
+                        main="Species dendrogram and module colors",
+                        cex.colorLabels=fontSize(), cex.dendroLabels=fontSize(),
+                        cex.rowText=fontSize(), cex.axis=fontSize(), cex.lab=fontSize()
+    )
   }
   output$dendroPlot <- renderPlot({
     plotDendrogram()
   })
   
   plotHtmp <- function(){
-    groups<-cutreeDynamic(dendro=hdADJ(), distM=dADJ(), minClusterSize=3,method="tree",cutHeight=input$cutLevel)
+    groups<-cutreeStatic(dendro=hdADJ(), minSize=3,cutHeight=input$cutLevel)
     corlist<-sapply(unique(groups), function(i) cors()[groups==i, groups==i])
     cc<-colorRampPalette(c("white", "blue"))
     heatmap.2(as.matrix(corlist[[input$selectGroup]]), 
               scale="none", 
               trace="none", 
               margins=c(12,12), 
-              cexRow=0.9, 
-              cexCol=0.9,
+              cexRow=fontSize(), 
+              cexCol=fontSize(),
               col=cc)
   }
 
@@ -577,7 +669,7 @@ shinyServer(function(input, output) {
   })
   
   plotCor <- function(){
-    groups<-cutreeDynamic(dendro=hdADJ(), distM=dADJ(), minClusterSize=3,method="tree",cutHeight=input$cutLevel)
+    groups<-cutreeStatic(dendro=hdADJ(), minSize=3,cutHeight=input$cutLevel)
     MEs0 = moduleEigengenes(microbeData(), groups+1)$eigengenes
     MEs = orderMEs(MEs0)
     moduleTraitCor = cor(MEs, metaData(), use="p");
@@ -595,7 +687,7 @@ shinyServer(function(input, output) {
                    setStdMargins = FALSE,
                    zlim = c(-1,1),
                    main = "", 
-                   cex.lab.x=0.8)    
+                   cex.lab.x=fontSize())    
   }
 
   output$corPlot <- renderPlot({
@@ -603,13 +695,27 @@ shinyServer(function(input, output) {
   })
   
   output$saveWGCNA <- downloadHandler(
-    filename = function() { paste("wcgnaPlot", '.pdf', sep='') },
+    filename = function() { 
+      if (input$wgcnaTab=="ndendrogram"){sp<-"dendrogram"}
+      if (input$wgcnaTab=="nheatmap"){sp<-"heatmap"}
+      if (input$wgcnaTab=="ncorrelations"){sp<-"correlations"}
+      paste("wgcnaPlot", sp, fileExtension(), sep=".") 
+    },
     content = function(filename) {
-      pdf(filename, width=10, height=10)
+      if (fileExtension()=="png"){
+        png(filename, width=2000, height=2000, units="px")
         if (input$wgcnaTab=="ndendrogram"){plotDendrogram()}
         if (input$wgcnaTab=="nheatmap"){plotHtmp()}
         if (input$wgcnaTab=="ncorrelations"){plotCor()}
-      dev.off()
+        dev.off()
+      }
+      if (fileExtension()=="pdf"){
+        pdf(filename, width=10, height=10)
+        if (input$wgcnaTab=="ndendrogram"){plotDendrogram()}
+        if (input$wgcnaTab=="nheatmap"){plotHtmp()}
+        if (input$wgcnaTab=="ncorrelations"){plotCor()}
+        dev.off()
+      }
     }
   )
 
@@ -617,7 +723,7 @@ shinyServer(function(input, output) {
 ############################################# HEATMAP ###############################################
 #####################################################################################################
 
-output$heatmapVariableSelection <- renderUI({
+  output$heatmapVariableSelection <- renderUI({
     sidebarPanel(
       helpText("The heatmap and associated sample clustering are calculated with only a subset of taxa. 
                The taxa are ranked by the sum of abundance across samples."),
@@ -655,7 +761,7 @@ output$heatmapVariableSelection <- renderUI({
     
     heatmap.2(heatmapData, scale="none", trace="none",
               lmat = cbind(c(4,2,1),c(5,3,0)), lwid=c(4,1), lhei = c(1,4,0.5), 
-              Rowv=NA, dendrogram="column", ColSideColors=colorV)
+              Rowv=NA, dendrogram="column", ColSideColors=colorV, cexRow=fontSize(), cexCol=fontSize())
   
   }
 
@@ -664,14 +770,129 @@ output$heatmapVariableSelection <- renderUI({
   })
 
   output$saveHeatmap <- downloadHandler(
-    filename = function() { paste("heatmapPlot", ".pdf", sep="")},
+    filename = function() { paste("heatmapPlot", fileExtension(), sep=".") },
     content = function(filename) {
-      pdf(filename, width=10, height=10)
-      plotHeatmap()
-      dev.off()
+      if (fileExtension()=="png"){
+        png(filename, width=2000, height=2000, units="px")
+        plotHeatmap()
+        dev.off()
+      }
+      if (fileExtension()=="pdf"){
+        pdf(filename, width=10, height=10)
+        plotHeatmap()
+        dev.off()
+      }
     }
   )
   
+#####################################################################################################
+######################################## STACKED BAR PLOT ###########################################
+#####################################################################################################
+  
+  # dynamically generate stacked barplot UI
+  output$stackedbarVariableSelection <- renderUI({  
+    # generate sidebar
+    sidebarPanel(
+      sliderInput("numBars", "Number of taxa:", min=2, max=15, value=5),
+      HTML('<br>'),
+      selectInput("stackedBarOrderVariable", "Order samples by:", choices = c("None", colnames(allData()))),
+      HTML('<br><br>'),
+      HTML('<div align="right">'),
+      downloadButton("saveStackedbar", "Save Plot"),
+      HTML('</div>')
+    )
+  })
+  
+  # data for stacked bar plot
+  stackedData <- reactive({
+      reorder<-FALSE
+      if (input$stackedBarOrderVariable != "None"){
+        sampleOrderFeature<-allData()[,which(colnames(allData())==input$stackedBarOrderVariable)]
+        sampleOrder<-order(sampleOrderFeature, decreasing=T)
+        reorder<-TRUE
+      }
+      topMicrobeCols<-order(apply(microbeData(), 2, sum), decreasing=T)
+      topMicrobes<-microbeData()[,topMicrobeCols[1:input$numBars]]
+      otherMicrobes<-microbeData()[,topMicrobeCols[(input$numBars+1):length(topMicrobeCols)]]
+      Other<-apply(otherMicrobes, 1, sum)
+      newData<-cbind(topMicrobes, Other)
+      if (reorder) newData <- newData[sampleOrder,]
+      newData
+  })
+  
+  # stacked bar plot
+  plotStackedbar <- function(){
+    layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
+    colorV<-discreteColors(input$numBars+1)
+    valueV<-colnames(stackedData())
+    barplot(t(stackedData()), 
+         beside=F,
+         space=c(0,0),
+         col=colorV,
+         ylab="Abundance",
+         border=NA, cex.axis=fontSize(), cex.names=fontSize(), cex.lab=fontSize()
+    )
+    plotLegend(colorV, valueV, gradient=F, cex=fontSize())
+    
+  }
+  
+  # save stacked bar plot
+  output$saveStackedbar <- downloadHandler(
+    filename = function() { paste("stackedBar", fileExtension(), sep=".") },
+    content = function(filename) {
+            if (fileExtension()=="png"){
+              png(filename, width=2000, height=2000, units="px")
+              plotStackedbar()
+              dev.off()
+            }
+            if (fileExtension()=="pdf"){
+              pdf(filename, width=10, height=10)
+              plotStackedbar()
+              dev.off()
+            }
+    }
+  )
+  
+  # display stacked bar plot of the requested variable
+  output$stackedbarPlot <- renderPlot({
+    plotStackedbar()
+  })
+
+#####################################################################################################
+########################################## PLOT OPTIONS #############################################
+#####################################################################################################
+  fileExtension<-reactive({
+    fileExtension<-input$saveType
+    if (length(fileExtension)<1) fileExtension<-"pdf"
+    fileExtension
+  })
+
+  fontSize<-reactive({
+    fontSize<-1.5
+    if (length(input$plotFontSize)>0) fontSize<-input$plotFontSize
+    fontSize
+  })
+  output$optionsSidebar <- renderUI({  
+    # generate sidebar
+    sidebarPanel(
+      helpText("These options will be applied to all plots"),
+      HTML('<br>'),
+      sliderInput("plotFontSize", "Plot font size:", value=1.5, min=0.1, max=3.1),
+      HTML('<br>'),
+      radioButtons("saveType", "Save plots as:", 
+                   list("PDF" = "pdf",
+                        "PNG" = "png")
+      ),
+      HTML('<br>')
+    )
+  })
+
+  output$optionsExamplePlot <- renderPlot({
+    plot(1:100/10, sin(1:100/10), xlab="X-axis label", ylab='Y-axis label', main="Example plot", type="l", 
+         cex.axis=fontSize(), cex.main=fontSize(), cex.lab=fontSize()
+         
+    )
+  })  
 
 
 })
