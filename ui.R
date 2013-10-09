@@ -58,7 +58,6 @@ shinyUI(pageWithSidebar(
              mainPanel(
                plotOutput("optionsExamplePlot", height="600px")
              )
-             
     ), 
     
     # Histogram tab

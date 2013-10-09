@@ -50,7 +50,7 @@ shinyServer(function(input, output) {
   }
 
   # plot legend
-  plotLegend<-function(colorVector, valueVector, gradient=F, title="", min=0, max=1, cex=1){
+  plotLegend<-function(colorVector, valueVector, gradient=F, title="", min=0, max=1, cex=1, keyCol=3){
     if (gradient){
       par(mar=c(6,4,2,2)+0.1)
       plot(c(0,1),c(0,1),type = 'n', axes = F,xlab = '', ylab = '', main = title, cex.main=cex)
@@ -66,7 +66,7 @@ shinyServer(function(input, output) {
       values<-levels(as.factor(valueVector))
       colors<-colorVector[uniquePairs]
       legend("center", legend=values, fill=colors, 
-             ncol=min(length(colors), 5), 
+             ncol=keyCol, 
              box.col="white", title=title,
              cex=cex)
     }
@@ -183,10 +183,29 @@ shinyServer(function(input, output) {
       tableOutput("varSum"),
       HTML('<div align="right">'),
       downloadButton("saveHist", "Save Plot"),
-      HTML('</div>')
+      HTML('</div>'),
+      HTML('<br><hr><div align="left">'),
+      uiOutput("histPlotOptions")
     )
   })
   
+  output$histPlotOptions <- renderUI({
+    mainPanel(
+      checkboxInput("histPlotOptions", "Show plot options"),
+      conditionalPanel(
+        condition = "input.histPlotOptions == true",
+        sliderInput("histFontSize", "Font size", min=0.01, max=3.01, value=1.5),
+        sliderInput("histMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
+        sliderInput("histMarRight", "Right margin", min=0.01, max=10.01, value=2.1),
+        sliderInput("histMarTop", "Top margin", min=0.01, max=10.01, value=4.1),
+        sliderInput("histMarBottom", "Bottom margin", min=0.01, max=10.01, value=5.1),
+        textInput("histXlab", "X label", value=input$variable),
+        textInput("histYlab", "Y label", value="Number of occurances"),
+        textInput("histTitle", "Title", value=paste("Histogram of ", input$variable, sep=""))
+      )
+    )
+  })
+
   # generate summary of histogram variable for display in sidebar
   output$varSum <- renderTable({
     s<-as.matrix(summary(allData()[,which(colnames(allData())==input$variable)]))
@@ -197,12 +216,13 @@ shinyServer(function(input, output) {
   # histogram plot
   plotHistogram <- function(){
     if (is.null(input$breaks)) return(NULL)
+    par(mar=c(input$histMarBottom,input$histMarLeft,input$histMarTop,input$histMarRight))
     hist(as.numeric(allData()[,which(colnames(allData())==input$variable)]), 
          breaks=input$breaks, 
-         xlab=input$variable, 
-         ylab="Number of occurances",
-         main=paste("Histogram of", input$variable, sep=" "),
-         cex.axis=fontSize(), cex.main=fontSize(), cex.lab=fontSize()
+         xlab=input$histXlab, 
+         ylab=input$histYlab,
+         main=input$histTitle,
+         cex.axis=input$histFontSize, cex.main=input$histFontSize, cex.lab=input$histFontSize
     )
   }
   
@@ -251,29 +271,52 @@ shinyServer(function(input, output) {
       HTML('<br><br><br>'),
       HTML('<div align="right">'),
       downloadButton("saveScatter", "Save Plot"),
-      HTML('</div>')
+      HTML('</div>'),
+      uiOutput("scatterPlotOptions")
     )
   })
   
+  output$scatterPlotOptions <- renderUI({
+    mainPanel(
+      checkboxInput("scatterPlotOptions", "Show plot options"),
+      conditionalPanel(
+        condition = "input.scatterPlotOptions == true",
+        sliderInput("scatterFontSize", "Font size", min=0.01, max=3.01, value=1.5),
+        sliderInput("scatterMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
+        sliderInput("scatterMarRight", "Right margin", min=0.01, max=10.01, value=2.1),
+        sliderInput("scatterMarTop", "Top margin", min=0.01, max=10.01, value=4.1),
+        sliderInput("scatterMarBottom", "Bottom margin", min=0.01, max=10.01, value=5.1),
+        textInput("scatterXlab", "X label", value=input$variable1),
+        textInput("scatterYlab", "Y label", value=input$variable2),
+        textInput("scatterTitle", "Title", value=paste("Scatterplot of", input$variable2, "vs.", input$variable1, sep=" ")),
+        textInput("scatterKeyTitle", "Legend title", value=input$scatterColorVariable),
+        sliderInput("scatterKeyFontSize", "Legend font size", min=0.01, max=3.01, value=1.5),
+        sliderInput("scatterKeyColumns", "Number of legend columns", min=1, max=15, value=3)
+
+      )
+    )
+  })
+
   # generate scatter plot
   plotScatter<-function(){
     layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
-    
+    par(mar=c(input$scatterMarBottom,input$scatterMarLeft,input$scatterMarTop,input$scatterMarRight))
     colorVariable<-which(colnames(allData())==input$scatterColorVariable)
     CVlist <- getColor(allData()[,colorVariable], type=input$scatterColorType, numCat=input$nscatterColorCat)
     colorV <- CVlist[[1]]
     valueV <- CVlist[[2]]
     plot(as.numeric(allData()[,which(colnames(allData())==input$variable1)]), 
          as.numeric(allData()[,which(colnames(allData())==input$variable2)]), 
-         xlab=input$variable1, 
-         ylab=input$variable2, 
-         main=paste("Scatterplot of", input$variable2, "vs.", input$variable1, sep=" "),
+         xlab=input$scatterXlab, 
+         ylab=input$scatterYlab, 
+         main=input$scatterTitle,
          col=colorV,
-         cex.axis=fontSize(), cex.main=fontSize(), cex.lab=fontSize()
+         cex.axis=input$scatterFontSize, cex.main=input$scatterFontSize, cex.lab=input$scatterFontSize
     )
     plotLegend(colorV, valueV, gradient=(input$scatterColorType=="gradient"), 
-               title=input$scatterColorVariable, min=min(as.numeric(valueV), na.rm=T), 
-               max=max(as.numeric(valueV), na.rm=T), cex=fontSize()
+               title=input$scatterKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
+               max=max(as.numeric(valueV), na.rm=T), cex=input$scatterKeyFontSize,
+               keyCol=input$scatterKeyColumns
     )
   }
   
@@ -321,7 +364,29 @@ shinyServer(function(input, output) {
       HTML('<br><br><br>'),
       HTML('<div align="right">'),
       downloadButton("savePca", "Save Plot"),
-      HTML('</div>')
+      HTML('</div>'),
+      uiOutput("pcaPlotOptions")
+    )
+  })
+
+  output$pcaPlotOptions <- renderUI({
+    mainPanel(
+      checkboxInput("pcaPlotOptions", "Show plot options"),
+      conditionalPanel(
+        condition = "input.pcaPlotOptions == true",
+        sliderInput("pcaFontSize", "Font size", min=0.01, max=3.01, value=1.5),
+        sliderInput("pcaMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
+        sliderInput("pcaMarRight", "Right margin", min=0.01, max=10.01, value=2.1),
+        sliderInput("pcaMarTop", "Top margin", min=0.01, max=10.01, value=4.1),
+        sliderInput("pcaMarBottom", "Bottom margin", min=0.01, max=10.01, value=5.1),
+        textInput("pcaXlab", "X label", value=paste("Principal component ", input$pcX, " (", pcaPV()[input$pcX], "%)", sep="")),
+        textInput("pcaYlab", "Y label", value=paste("Principal component ", input$pcY, " (", pcaPV()[input$pcY], "%)", sep="")),
+        textInput("pcaTitle", "Title", value=paste("Scatter plot of principal components")),
+        textInput("pcaKeyTitle", "Legend title", value=input$pcaColorVariable),
+        sliderInput("pcaKeyFontSize", "Legend font size", min=0.01, max=3.01, value=1.5),
+        sliderInput("pcaKeyColumns", "Number of legend columns", min=1, max=15, value=3)
+        
+      )
     )
   })
 
@@ -342,21 +407,22 @@ shinyServer(function(input, output) {
   # generate PCA plot
   plotPca <- function(){
     layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
+    par(mar=c(input$pcaMarBottom,input$pcaMarLeft,input$pcaMarTop,input$pcaMarRight))
     
     colorVariable<-which(colnames(allData())==input$pcaColorVariable)
     CVlist<-getColor(allData()[,colorVariable], type=input$pcaColorType, numCat=input$npcaColorCat)
     colorV <- CVlist[[1]]
     valueV <- CVlist[[2]]
     plot(pcX(), pcY(), 
-         xlab=paste("Principal component ", input$pcX, " (", pcaPV()[input$pcX], "%)", sep=""), 
-         ylab=paste("Principal component ", input$pcY, " (", pcaPV()[input$pcY], "%)", sep=""), 
-         main=paste("Scatter plot of principal components"),
+         xlab=input$pcaXlab, 
+         ylab=input$pcaYlab, 
+         main=input$pcaTitle,
          col=colorV,
-         cex.axis=fontSize(), cex.main=fontSize(), cex.lab=fontSize()
+         cex.axis=input$pcaFontSize, cex.main=input$pcaFontSize, cex.lab=input$pcaFontSize
     )
     plotLegend(colorV, valueV, gradient=(input$pcaColorType=="gradient"), 
-               title=input$pcaColorVariable, min=min(as.numeric(valueV), na.rm=T), 
-               max=max(as.numeric(valueV), na.rm=T), cex=fontSize()
+               title=input$pcaKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
+               max=max(as.numeric(valueV), na.rm=T), cex=input$pcaKeyFontSize, keyCol=input$pcaKeyColumns
     )
   }
 
