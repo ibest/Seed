@@ -468,10 +468,28 @@ shinyServer(function(input, output) {
       HTML('<br><br>'),
       HTML('<div align="right">'),
       downloadButton("saveBar", "Save Plot"),
-      HTML('</div>')
+      HTML('</div>'),
+      uiOutput("barPlotOptions")
     )
   })
-  
+    
+  output$barPlotOptions <- renderUI({
+    mainPanel(
+      checkboxInput("barPlotOptions", "Show plot options"),
+      conditionalPanel(
+        condition = "input.barPlotOptions == true",
+        sliderInput("barFontSize", "Font size", min=0.01, max=3.01, value=1.5),
+        sliderInput("barMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
+        sliderInput("barMarRight", "Right margin", min=0.01, max=10.01, value=2.1),
+        sliderInput("barMarTop", "Top margin", min=0.01, max=10.01, value=4.1),
+        sliderInput("barMarBottom", "Bottom margin", min=0.01, max=10.01, value=5.1),
+        textInput("barXlab", "X label", value=input$categoryVariable),
+        textInput("barYlab", "Y label", value=input$barVariable),
+        textInput("barTitle", "Title", value="")
+      )
+    )
+  })
+
   plotBar <- function(){
     barVarCol<-which(colnames(allData())==input$barVariable)
     catVarCol<-which(colnames(allData())==input$categoryVariable)
@@ -489,16 +507,19 @@ shinyServer(function(input, output) {
     sds[is.na(sds)]<-0
     ns<-sapply(lapply(groupedValues, na.omit), length)
     errors<-qnorm(0.975)*sds/sqrt(ns)
+    par(mar=c(input$barMarBottom,input$barMarLeft,input$barMarTop,input$barMarRight))
     x<-barplot(means, 
-               xlab=colnames(allData())[catVarCol], 
-               ylab=colnames(allData())[barVarCol], 
+               xlab=input$barXlab, 
+               ylab=input$barYlab, 
                ylim=c(min(means-errors), max(means+errors)),
+               main=input$barTitle,
                xpd=F,
                col="#f5f5f5",
-               cex.axis=fontSize(), cex.names=fontSize(), cex.lab=fontSize()
+               cex.axis=input$barFontSize, cex.names=input$barFontSize, 
+               cex.lab=input$barFontSize, cex.main=input$barFontSize
     )
     arrows(x,means+errors,x,means-errors,code=0)
-    text(x,min(means-errors)+(max(means+errors)-min(means-errors))/20, ns, col="blue", cex=fontSize())
+    text(x,min(means-errors)+(max(means+errors)-min(means-errors))/20, ns, col="blue", cex=input$barFontSize)
   }
 
   output$saveBar <- downloadHandler(
@@ -557,10 +578,30 @@ shinyServer(function(input, output) {
       HTML('<br><br><br>'),
       HTML('<div align="right">'),
       downloadButton("saveCluster", "Save Plot"),
-      HTML('</div>')
+      HTML('</div>'),
+      uiOutput("clusterPlotOptions")
     )
   })
   
+  output$clusterPlotOptions <- renderUI({
+    mainPanel(
+      checkboxInput("clusterPlotOptions", "Show plot options"),
+      conditionalPanel(
+        condition = "input.clusterPlotOptions == true",
+        sliderInput("clusterFontSize", "Font size", min=0.01, max=3.01, value=1.5),
+        sliderInput("clusterMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
+        sliderInput("clusterMarRight", "Right margin", min=0.01, max=10.01, value=2.1),
+        sliderInput("clusterMarTop", "Top margin", min=0.01, max=10.01, value=4.1),
+        sliderInput("clusterMarBottom", "Bottom margin", min=0.01, max=10.01, value=5.1),
+        textInput("clusterYlab", "Y label", value="Height"),
+        textInput("clusterTitle", "Title", value=""),
+        textInput("clusterKeyTitle", "Legend title", value=input$clusterColorVariable),
+        sliderInput("clusterKeyFontSize", "Legend font size", min=0.01, max=3.01, value=1.5),
+        sliderInput("clusterKeyColumns", "Number of legend columns", min=1, max=15, value=3)
+      )
+    )
+  })
+
   clusterData <- reactive({
     if (input$clusterChoice == "Metadata"){ data <- metaData() }
     if (input$clusterChoice == "Microbe data"){ data <- microbeData() }
@@ -602,19 +643,24 @@ shinyServer(function(input, output) {
     colorV <- CVlist[[1]]
     valueV <- CVlist[[2]]
     layout(matrix(c(1,2,3,1,2,3),ncol=2), height = c(4,1,1),width = c(4,4))
+    par(mar=c(input$clusterMarBottom,input$clusterMarLeft,input$clusterMarTop,input$clusterMarRight))
     plotDendroAndColors(clusterObject(), 
                         colors=data.frame(colorV), 
-                        dendroLabels=F, 
+                        dendroLabels=NULL, 
                         abHeight=input$clusterCutHeight*max(clusterObject()$height), 
-                        groupLabels=input$clusterColorVariable,
-                        main="",
+                        groupLabels="",
+                        main=input$clusterTitle,
+                        ylab=input$clusterYlab,
                         setLayout=FALSE, 
-                        cex.colorLabels=fontSize(), cex.dendroLabels=fontSize(),
-                        cex.rowText=fontSize(), cex.axis=fontSize(), cex.lab=fontSize()
+                        mar=c(input$clusterMarBottom,input$clusterMarLeft,input$clusterMarTop,input$clusterMarRight),
+                        cex.colorLabels=input$clusterFontSize, cex.dendroLabels=input$clusterFontSize,
+                        cex.rowText=input$clusterFontSize, cex.axis=input$clusterFontSize, 
+                        cex.lab=input$clusterFontSize,cex.main=input$clusterFontSize
     )
     plotLegend(colorV, valueV, gradient=(input$clusterColorType=="gradient"), 
-               title=input$clusterColorVariable, min=min(as.numeric(valueV), na.rm=T), 
-               max=max(as.numeric(valueV), na.rm=T), cex=fontSize()
+               title=input$clusterKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
+               max=max(as.numeric(valueV), na.rm=T), cex=input$clusterKeyFontSize, 
+               keyCol=input$clusterKeyColumns
     )
   }
 
@@ -628,15 +674,18 @@ shinyServer(function(input, output) {
     plotDendroAndColors(subtreeObject(), 
                         colors=data.frame(colorV), 
                         dendroLabels=NULL, 
-                        groupLabels=input$clusterColorVariable,
-                        main="",
+                        groupLabels="",
+                        main=input$clusterTitle,
                         setLayout=FALSE,
-                        cex.colorLabels=fontSize(), cex.dendroLabels=fontSize(),
-                        cex.rowText=fontSize(), cex.axis=fontSize(), cex.lab=fontSize()
+                        mar=c(input$clusterMarBottom,input$clusterMarLeft,input$clusterMarTop,input$clusterMarRight),
+                        cex.colorLabels=input$clusterFontSize, cex.dendroLabels=input$clusterFontSize,
+                        cex.rowText=input$clusterFontSize, cex.axis=input$clusterFontSize, 
+                        cex.lab=input$clusterFontSize, cex.main=input$clusterFontSize
     )  
     plotLegend(colorV, valueV, gradient=(input$clusterColorType=="gradient"), 
-               title=input$clusterColorVariable, min=min(as.numeric(valueV), na.rm=T), 
-               max=max(as.numeric(valueV), na.rm=T),cex=fontSize()
+               title=input$clusterKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
+               max=max(as.numeric(valueV), na.rm=T),cex=input$clusterKeyFontSize, 
+               keyCol=input$clusterKeyColumns
     )
   }
 
@@ -807,7 +856,20 @@ shinyServer(function(input, output) {
       HTML('<hr>'),
       HTML('<div align="right">'),
       downloadButton("saveHeatmap", "Save Plot"),
-      HTML('</div>')
+      HTML('</div>'),
+      uiOutput("heatmapPlotOptions")
+    )
+  })
+
+  output$heatmapPlotOptions <- renderUI({
+    mainPanel(
+      checkboxInput("heatmapPlotOptions", "Show plot options"),
+      conditionalPanel(
+        condition = "input.heatmapPlotOptions == true",
+        sliderInput("heatmapFontSize", "Font size", min=0.01, max=3.01, value=1.5),
+        sliderInput("heatmapMarCol", "Column margin", min=0.01, max=10.01, value=4.1),
+        sliderInput("heatmapMarRow", "Row margin", min=0.01, max=10.01, value=1.1)
+      )
     )
   })
 
@@ -827,7 +889,9 @@ shinyServer(function(input, output) {
     
     heatmap.2(heatmapData, scale="none", trace="none",
               lmat = cbind(c(4,2,1),c(5,3,0)), lwid=c(4,1), lhei = c(1,4,0.5), 
-              Rowv=NA, dendrogram="column", ColSideColors=colorV, cexRow=fontSize(), cexCol=fontSize())
+              Rowv=NA, dendrogram="column", ColSideColors=colorV, cexRow=input$heatmapFontSize, 
+              cexCol=input$heatmapFontSize, margins=c(input$heatmapMarCol, input$heatmapMarRow)
+    )
   
   }
 
@@ -865,7 +929,27 @@ shinyServer(function(input, output) {
       HTML('<br><br>'),
       HTML('<div align="right">'),
       downloadButton("saveStackedbar", "Save Plot"),
-      HTML('</div>')
+      HTML('</div>'),
+      uiOutput("stackedbarPlotOptions")
+    )
+  })
+
+  output$stackedbarPlotOptions <- renderUI({
+    mainPanel(
+      checkboxInput("stackedbarPlotOptions", "Show plot options"),
+      conditionalPanel(
+        condition = "input.stackedbarPlotOptions == true",
+        sliderInput("stackedbarFontSize", "Font size", min=0.01, max=3.01, value=1.5),
+        sliderInput("stackedbarMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
+        sliderInput("stackedbarMarRight", "Right margin", min=0.01, max=10.01, value=2.1),
+        sliderInput("stackedbarMarTop", "Top margin", min=0.01, max=10.01, value=4.1),
+        sliderInput("stackedbarMarBottom", "Bottom margin", min=0.01, max=10.01, value=5.1),
+        textInput("stackedbarYlab", "Y label", value="Abundance"),
+        textInput("stackedbarTitle", "Title", value=""),
+        sliderInput("stackedbarKeyFontSize", "Legend font size", min=0.01, max=3.01, value=1.5),
+        sliderInput("stackedbarKeyColumns", "Number of legend columns", min=1, max=15, value=3)
+        
+      )
     )
   })
   
@@ -889,16 +973,24 @@ shinyServer(function(input, output) {
   # stacked bar plot
   plotStackedbar <- function(){
     layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
+    par(mar=c(input$stackedbarMarBottom,input$stackedbarMarLeft,input$stackedbarMarTop,input$stackedbarMarRight))
     colorV<-discreteColors(input$numBars+1)
     valueV<-colnames(stackedData())
     barplot(t(stackedData()), 
          beside=F,
          space=c(0,0),
          col=colorV,
-         ylab="Abundance",
-         border=NA, cex.axis=fontSize(), cex.names=fontSize(), cex.lab=fontSize()
+         ylab=input$stackedbarYlab,
+         main=input$stackedbarTitle,
+         border=NA, cex.axis=input$stackedbarFontSize, cex.names=input$stackedbarFontSize, 
+         cex.lab=input$stackedbarFontSize, cex.main=input$stackedbarFontSize
     )
-    plotLegend(colorV, valueV, gradient=F, cex=fontSize())
+    plotLegend(colorV, valueV, gradient=F, cex=input$stackedbarKeyFontSize, 
+               keyCol=input$stackedbarKeyColumns)
+    
+    
+
+    
     
   }
   
@@ -935,30 +1027,9 @@ shinyServer(function(input, output) {
 
   fontSize<-reactive({
     fontSize<-1.5
-    if (length(input$plotFontSize)>0) fontSize<-input$plotFontSize
     fontSize
   })
-  output$optionsSidebar <- renderUI({  
-    # generate sidebar
-    sidebarPanel(
-      helpText("These options will be applied to all plots"),
-      HTML('<br>'),
-      sliderInput("plotFontSize", "Plot font size:", value=1.5, min=0.1, max=3.1),
-      HTML('<br>'),
-      radioButtons("saveType", "Save plots as:", 
-                   list("PDF" = "pdf",
-                        "PNG" = "png")
-      ),
-      HTML('<br>')
-    )
-  })
 
-  output$optionsExamplePlot <- renderPlot({
-    plot(1:100/10, sin(1:100/10), xlab="X-axis label", ylab='Y-axis label', main="Example plot", type="l", 
-         cex.axis=fontSize(), cex.main=fontSize(), cex.lab=fontSize()
-         
-    )
-  })  
 
 
 })

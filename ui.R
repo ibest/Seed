@@ -7,7 +7,6 @@ shinyUI(pageWithSidebar(
   
   # Application title
   headerPanel("microbePlot"),
-  
   tabsetPanel(
     
     tabPanel("Data", 
@@ -30,7 +29,7 @@ shinyUI(pageWithSidebar(
           selectInput('microbeSep', 'Separator', c(Comma=',', Semicolon=';', Tab='\t'), 'Comma'),
           selectInput('microbeQuote', 'Quote', c(None='', 'Double Quote'='"', 'Single Quote'="'"), 'Double Quote')
         ),
-        HTML('<hr>'),
+        HTML('<br>'),
         
         radioButtons("dataConvert", "Convert data to:", 
                      list("None"="none",
@@ -38,8 +37,11 @@ shinyUI(pageWithSidebar(
                           "Presence/absence" = "presence")
         ),
         
+        radioButtons("saveType", "Save plots as:", 
+                     list("PDF" = "pdf",
+                          "PNG" = "png")
+        ),
         HTML('<hr>'),
-        
         helpText("Input data must be in two files. The metadata file should include sample information. 
                   The microbe data file should include the abundances of the microbes in each sample."),
         helpText("Samples must be in rows, with the same order in both files.")
@@ -51,14 +53,6 @@ shinyUI(pageWithSidebar(
         tableOutput("viewMicrobeData")
       )
     ),
-    
-    # plot options
-    tabPanel("Options",
-             uiOutput("optionsSidebar"),
-             mainPanel(
-               plotOutput("optionsExamplePlot", height="600px")
-             )
-    ), 
     
     # Histogram tab
     tabPanel("Histogram", 
