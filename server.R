@@ -231,7 +231,7 @@ shinyServer(function(input, output) {
     filename = function() { paste("histogramPlot", fileExtension(), sep=".") },
     content = function(filename) {
       if (fileExtension()=="png"){
-        png(filename, width=2000, height=2000, units="px")
+        png(filename, width=2000, height=2000, units="px", pointsize=25*input$histFontSize)
         plotHistogram()
         dev.off()
       }
@@ -325,7 +325,7 @@ shinyServer(function(input, output) {
     filename = function() { paste("scatterPlot", fileExtension(), sep=".") },
     content = function(filename) {
       if (fileExtension()=="png"){
-        png(filename, width=2000, height=2000, units="px")
+        png(filename, width=2000, height=2000, units="px", pointsize=25*input$scatterFontSize)
         plotScatter()
         dev.off()
       }
@@ -431,7 +431,7 @@ shinyServer(function(input, output) {
     filename = function() { paste("PCAplot", fileExtension(), sep=".") },
     content = function(filename) {
       if (fileExtension()=="png"){
-        png(filename, width=2000, height=2000, units="px")
+        png(filename, width=2000, height=2000, units="px", pointsize=25*input$pcaFontSize)
         plotPca()
         dev.off()
       }
@@ -526,7 +526,7 @@ shinyServer(function(input, output) {
     filename = function() { paste("barPlot", fileExtension(), sep=".") },
     content = function(filename) {
       if (fileExtension()=="png"){
-        png(filename, width=2000, height=2000, units="px")
+        png(filename, width=2000, height=2000, units="px", pointsize=25*input$barFontSize)
         plotBar()
         dev.off()
       }
@@ -705,7 +705,7 @@ shinyServer(function(input, output) {
     },
     content = function(filename) {
       if (fileExtension()=="png"){
-        png(filename, width=2000, height=2000, units="px")
+        png(filename, width=2000, height=2000, units="px", pointsize=25*input$clusterFontSize)
         if (input$clusterTab=="complete"){plotCompleteTree()}
         if (input$clusterTab=="subtree"){plotSubTree()}
         dev.off()
@@ -818,7 +818,7 @@ shinyServer(function(input, output) {
     },
     content = function(filename) {
       if (fileExtension()=="png"){
-        png(filename, width=2000, height=2000, units="px")
+        png(filename, width=2000, height=2000, units="px", pointsize=25*input$fontSize())
         if (input$wgcnaTab=="ndendrogram"){plotDendrogram()}
         if (input$wgcnaTab=="nheatmap"){plotHtmp()}
         if (input$wgcnaTab=="ncorrelations"){plotCor()}
@@ -903,7 +903,7 @@ shinyServer(function(input, output) {
     filename = function() { paste("heatmapPlot", fileExtension(), sep=".") },
     content = function(filename) {
       if (fileExtension()=="png"){
-        png(filename, width=2000, height=2000, units="px")
+        png(filename, width=2000, height=2000, units="px", pointsize=25*input$heatmapFontSize)
         plotHeatmap()
         dev.off()
       }
@@ -988,10 +988,6 @@ shinyServer(function(input, output) {
     plotLegend(colorV, valueV, gradient=F, cex=input$stackedbarKeyFontSize, 
                keyCol=input$stackedbarKeyColumns)
     
-    
-
-    
-    
   }
   
   # save stacked bar plot
@@ -999,7 +995,7 @@ shinyServer(function(input, output) {
     filename = function() { paste("stackedBar", fileExtension(), sep=".") },
     content = function(filename) {
             if (fileExtension()=="png"){
-              png(filename, width=2000, height=2000, units="px")
+              png(filename, width=2000, height=2000, units="px", pointsize=25*input$stackedbarFontSize)
               plotStackedbar()
               dev.off()
             }
