@@ -50,7 +50,11 @@ shinyUI(pageWithSidebar(
              
       mainPanel(
         tableOutput("viewMetaData"),
-        tableOutput("viewMicrobeData")
+        tableOutput("viewMicrobeData"),
+        HTML("<br>"),
+        helpText("This Venn diagram shows the number of samples in each file. Only the overlapping 
+                 samples are retained for use by microbePlot."),
+        plotOutput("vennPlot", height="300px")
       )
     ),
     

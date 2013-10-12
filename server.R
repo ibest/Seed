@@ -100,9 +100,13 @@ shinyServer(function(input, output) {
 #####################################################################################################
 ############################################# DATA ##################################################
 #####################################################################################################
+  output$vennPlot <- renderPlot({          
+    par(mar=c(0,0,0,0))
+    venn(list(microbeData=row.names(inputMicrobeData()), metaData=row.names(inputMetaData())))
+  })
 
   # microbeData will contain relative abundances
-  microbeData <- reactive({ 
+  inputMicrobeData<-reactive({
     microbeFile <- input$microbeFilename$datapath
     if (is.null(microbeFile)) return(NULL)
     microbeData <- read.csv(microbeFile, header=input$microbeHeader, sep=input$microbeSep, quote=input$microbeQuote) 
@@ -113,6 +117,16 @@ shinyServer(function(input, output) {
       microbeData<-as.data.frame(microbeData[,-1])
       row.names(microbeData)<-rn
       colnames(microbeData)<-cn[-1]
+    }
+    microbeData
+  })
+
+  microbeData <- reactive({ 
+    microbeData<-inputMicrobeData()
+    # if metaData is available, use only samples that overlap
+    if (!is.null(input$metaFilename$datapath)){
+      microbeData<-microbeData[row.names(microbeData)%in%row.names(inputMetaData()),]
+      microbeData<-microbeData[na.exclude(match(row.names(inputMetaData()),row.names(microbeData))),]
     }
     if (input$dataConvert=="relative"){
       microbeData <- t(apply(microbeData, 1, function(i) i/sum(i)))
@@ -127,7 +141,7 @@ shinyServer(function(input, output) {
   
   # metaData will contain all sample information other than microbial abundances
   # When reading in metadata, also calculate diversity metrics from microbeData and add to metaData
-  metaData <- reactive({ 
+  inputMetaData<-reactive({
     metaFile <- input$metaFilename$datapath
     if (is.null(metaFile)) return(NULL)
     metaData <- read.csv(metaFile, header=input$metaHeader, sep=input$metaSep, quote=input$metaQuote)
@@ -139,12 +153,21 @@ shinyServer(function(input, output) {
       row.names(metaData)<-rn
       colnames(metaData)<-cn[-1]
     }
+    metaData
+  })
+
+  metaData <- reactive({ 
+    metaData<-inputMetaData()
     if (is.null(input$microbeFilename$datapath)) return(metaData)
+
+    metaData<-metaData[row.names(metaData)%in%row.names(inputMicrobeData()),]
+
     cbind(metaData,
       Shannon.diversity=diversity(microbeData(), index="shannon"),
       Simpson.diversity=diversity(microbeData(), index="simpson"),
       inverse.Simpson.diversity=diversity(microbeData(), index="invsimpson")
     ) 
+    metaData
   })
   
   # include all data combined in order to produce comprehensive lists of features
