@@ -43,9 +43,8 @@ shinyUI(pageWithSidebar(
         ),
         HTML('<hr>'),
         helpText("Input data must be in two files. The metadata file should include sample information. 
-                  The microbe data file should include the abundances of the microbes in each sample."),
-        helpText("Samples must be in rows, with the same order in both files.")
-
+                  The microbe file should include the abundances of the microbes in each sample. 
+                  Samples must be in rows.")
       ),
              
       mainPanel(
@@ -174,9 +173,11 @@ shinyUI(pageWithSidebar(
                    Shannon, Simpson, and Inverse Simpson indices. They are calculated using the vegan R package and may
                    not be appropriate for every type of data."),
           helpText("microbePlot includes options for converting abundance data to relative abundance or to presence/absence.
-                   Relative abundance is calculated by dividing each taxa count by the total number of taxa for each sample.
+                   Relative abundance is calculated by dividing each taxa count by the sum of all taxa counts for each sample.
                    Presence/absence converts every non-zero taxa to 1. The converted data is used for all visualizations and
-                   summaries.")
+                   summaries."),
+          helpText("microbePlot supports saving plots in two different file formats. The user may select either PDF or PNG formats.
+                   All saved plots will be in the format selected in the 'Data' tab.")
         ),
         conditionalPanel(
           condition = "input.helpTopic == 'Histogram'",

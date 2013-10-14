@@ -102,7 +102,9 @@ shinyServer(function(input, output) {
 #####################################################################################################
   output$vennPlot <- renderPlot({          
     par(mar=c(0,0,0,0))
-    venn(list(microbeData=row.names(inputMicrobeData()), metaData=row.names(inputMetaData())))
+    vl<-list(microbeData=row.names(inputMicrobeData()), metaData=row.names(inputMetaData()))
+    names(vl)<-c("Samples in microbe file", "Samples in metadata file")
+    venn(vl)
   })
 
   # microbeData will contain relative abundances
