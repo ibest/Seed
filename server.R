@@ -972,7 +972,8 @@ shinyServer(function(input, output) {
         textInput("stackedbarYlab", "Y label", value="Abundance"),
         textInput("stackedbarTitle", "Title", value=""),
         sliderInput("stackedbarKeyFontSize", "Legend font size", min=0.01, max=3.01, value=1.5),
-        sliderInput("stackedbarKeyColumns", "Number of legend columns", min=1, max=15, value=3)
+        sliderInput("stackedbarKeyColumns", "Number of legend columns", min=1, max=15, value=3),
+        textInput("stackedbarColorOrder", "Color order", value=paste(1:(input$numBars+1), collapse=","))
         
       )
     )
@@ -1000,6 +1001,7 @@ shinyServer(function(input, output) {
     layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
     par(mar=c(input$stackedbarMarBottom,input$stackedbarMarLeft,input$stackedbarMarTop,input$stackedbarMarRight))
     colorV<-discreteColors(input$numBars+1)
+    colorV<-colorV[as.numeric(unlist(strsplit(input$stackedbarColorOrder,split=",")))]
     valueV<-colnames(stackedData())
     barplot(t(stackedData()), 
          beside=F,
