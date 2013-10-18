@@ -389,6 +389,8 @@ shinyServer(function(input, output) {
       HTML('<br><br><br>'),
       HTML('<div align="right">'),
       downloadButton("savePca", "Save Plot"),
+      HTML('<br><br>'),
+      downloadButton("savePcaEigen", "Save Eigenvectors"),
       HTML('</div>'),
       uiOutput("pcaPlotOptions")
     )
@@ -415,8 +417,16 @@ shinyServer(function(input, output) {
     )
   })
 
+  pcaEigen<-reactive({
+    covMat<-cov(microbeData())    # covariance matrix
+    eigenMat<-as.matrix(eigen(covMat)$vectors)    # eigenvectors
+    row.names(eigenMat)<-row.names(covMat)
+    colnames(eigenMat)<-paste("ev", 1:ncol(eigenMat), sep="")
+    eigenMat
+  })
+
   pcaObject<-reactive({
-    as.matrix(microbeData()) %*% as.matrix(eigen(cov(microbeData()))$vectors)
+    as.matrix(microbeData()) %*% pcaEigen()
   })
   pcX<-reactive({
     pcaObject()[,input$pcX]
@@ -467,7 +477,14 @@ shinyServer(function(input, output) {
       }
     }
   )
-  
+
+  output$savePcaEigen <- downloadHandler(
+    filename = function() { paste("PCAeigenvectors", "csv", sep=".") },
+    content = function(filename) {
+      write.csv(file=filename, x=pcaEigen(), quote=F)
+    }
+  )
+
   # display PCA plot
   output$pcaPlot <- renderPlot({
     plotPca()
