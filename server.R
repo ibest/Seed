@@ -164,11 +164,11 @@ shinyServer(function(input, output) {
 
     metaData<-metaData[row.names(metaData)%in%row.names(inputMicrobeData()),]
 
-    cbind(metaData,
+    metaData<-cbind(metaData,
       Shannon.diversity=diversity(microbeData(), index="shannon"),
       Simpson.diversity=diversity(microbeData(), index="simpson"),
       inverse.Simpson.diversity=diversity(microbeData(), index="invsimpson")
-    ) 
+    )
     metaData
   })
   
