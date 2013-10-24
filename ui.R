@@ -31,10 +31,12 @@ shinyUI(pageWithSidebar(
         ),
         HTML('<br>'),
         
-        radioButtons("dataConvert", "Convert data to:", 
+        selectInput("dataTransform", "Transform data:", 
                      list("None"="none",
-                          "Relative abundance" = "relative",
-                          "Presence/absence" = "presence")
+                          "Relative abundance" = "total",
+                          "Presence/absence" = "pa",
+                          "Hellinger" = "hellinger"
+                     )
         ),
         
         radioButtons("saveType", "Save plots as:", 

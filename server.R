@@ -130,14 +130,10 @@ shinyServer(function(input, output) {
       microbeData<-microbeData[row.names(microbeData)%in%row.names(inputMetaData()),]
       microbeData<-microbeData[na.exclude(match(row.names(inputMetaData()),row.names(microbeData))),]
     }
-    if (input$dataConvert=="relative"){
-      microbeData <- t(apply(microbeData, 1, function(i) i/sum(i)))
+    if (input$dataTransform!="none"){
+      microbeData <- decostand(microbeData, method=input$dataTransform)
     }
-    if (input$dataConvert=="presence"){
-      rn<-row.names(microbeData)
-      microbeData<-apply(microbeData, 2, function(i) as.numeric(as.logical(i)))
-      row.names(microbeData)<-rn
-    }
+
     microbeData
   })
   
