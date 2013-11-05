@@ -1023,7 +1023,7 @@ shinyServer(function(input, output) {
          ylab=input$stackedbarYlab,
          main=input$stackedbarTitle,
          border=NA, cex.axis=input$stackedbarFontSize, cex.names=input$stackedbarFontSize, 
-         cex.lab=input$stackedbarFontSize, cex.main=input$stackedbarFontSize
+         cex.lab=input$stackedbarFontSize, cex.main=input$stackedbarFontSize, las=3
     )
     plotLegend(colorV, valueV, gradient=F, cex=input$stackedbarKeyFontSize, 
                keyCol=input$stackedbarKeyColumns)
