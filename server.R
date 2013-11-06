@@ -963,7 +963,9 @@ shinyServer(function(input, output) {
     sidebarPanel(
       sliderInput("numBars", "Number of taxa:", min=2, max=15, value=5),
       HTML('<br>'),
-      selectInput("stackedBarOrderVariable", "Order samples by:", choices = c("None", colnames(allData()))),
+      selectInput("stackedBarOrderVariable1", "Order samples by:", choices = c("None", colnames(allData()))),
+      selectInput("stackedBarOrderVariable2", "Secondary ordering:", choices = c("None", colnames(allData()))),
+      selectInput("stackedBarOrderVariable3", "Tertiary ordering:", choices = c("None", colnames(allData()))),
       HTML('<br><br>'),
       HTML('<div align="right">'),
       downloadButton("saveStackedbar", "Save Plot"),
@@ -995,11 +997,16 @@ shinyServer(function(input, output) {
   # data for stacked bar plot
   stackedData <- reactive({
       reorder<-FALSE
-      if (input$stackedBarOrderVariable != "None"){
-        sampleOrderFeature<-allData()[,which(colnames(allData())==input$stackedBarOrderVariable)]
-        sampleOrder<-order(sampleOrderFeature, decreasing=T)
-        reorder<-TRUE
-      }
+      sbov1<-input$stackedBarOrderVariable1
+      sbov2<-input$stackedBarOrderVariable2
+      sbov3<-input$stackedBarOrderVariable3
+      if (sbov1!="None") sampleOrderFeature1<-allData()[,which(colnames(allData())==sbov1)]
+      if (sbov2!="None") sampleOrderFeature2<-allData()[,which(colnames(allData())==sbov2)]
+      if (sbov3!="None") sampleOrderFeature3<-allData()[,which(colnames(allData())==sbov3)]
+      if (sbov1!="None") {sampleOrder<-order(sampleOrderFeature1, decreasing=T); reorder<-TRUE}
+      if ((sbov1!="None") & (sbov2!="None")) {sampleOrder<-order(sampleOrderFeature1, sampleOrderFeature2, decreasing=T); reorder<-TRUE}
+      if ((sbov1!="None") & (sbov2!="None") & (sbov3!="None")) {sampleOrder<-order(sampleOrderFeature1, sampleOrderFeature2, sampleOrderFeature3, decreasing=T); reorder<-TRUE}
+
       topMicrobeCols<-order(apply(microbeData(), 2, sum), decreasing=T)
       topMicrobes<-microbeData()[,topMicrobeCols[1:input$numBars]]
       otherMicrobes<-microbeData()[,topMicrobeCols[(input$numBars+1):length(topMicrobeCols)]]
