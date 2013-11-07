@@ -3,6 +3,8 @@
 
 library(shiny)
 
+plotHeight="600px"
+
 shinyUI(pageWithSidebar(
   
   # Application title
@@ -65,7 +67,7 @@ shinyUI(pageWithSidebar(
       uiOutput("histVariableSelection"),
   
       mainPanel(    
-        plotOutput("histPlot", height="600px")
+        plotOutput("histPlot", height=plotHeight)
       )
     ),
     
@@ -74,7 +76,7 @@ shinyUI(pageWithSidebar(
       uiOutput("scatterVariableSelection"),
       
       mainPanel(
-        plotOutput("scatterPlot", height="600px")
+        plotOutput("scatterPlot", height=plotHeight)
       )
     ),
     
@@ -83,7 +85,7 @@ shinyUI(pageWithSidebar(
              uiOutput("pcaVariableSelection"),
              
              mainPanel(
-               plotOutput("pcaPlot", height="600px")
+               plotOutput("pcaPlot", height=plotHeight)
              )
     ),
     
@@ -92,7 +94,7 @@ shinyUI(pageWithSidebar(
              uiOutput("barVariableSelection"),
              
              mainPanel(
-               plotOutput("barPlot", height="600px")
+               plotOutput("barPlot", height=plotHeight)
              )
     ),
     tabPanel("Cluster", 
@@ -102,10 +104,10 @@ shinyUI(pageWithSidebar(
                tabsetPanel(
                  id = "clusterTab",
                  tabPanel("Complete", value="complete",
-                          plotOutput("clusterPlot", height="600px")
+                          plotOutput("clusterPlot", height=plotHeight)
                  ),
                  tabPanel("Subtrees", value="subtree",
-                          plotOutput("clusterGroupPlot", height="600px")
+                          plotOutput("clusterGroupPlot", height=plotHeight)
                  )
               )
              )
@@ -118,13 +120,13 @@ shinyUI(pageWithSidebar(
                tabsetPanel(
                  id="wgcnaTab",
                  tabPanel("Dendrogram", value="ndendrogram",
-                          plotOutput("dendroPlot", height="600px")
+                          plotOutput("dendroPlot", height=plotHeight)
                  ),
                  tabPanel("Heatmap", value="nheatmap",
-                          plotOutput("htmpPlot", height="600px")
+                          plotOutput("htmpPlot", height=plotHeight)
                  ),
                  tabPanel("Correlations", value="ncorrelations",
-                          plotOutput("corPlot", height="600px")
+                          plotOutput("corPlot", height=plotHeight)
                  )
                  
                )
@@ -134,14 +136,14 @@ shinyUI(pageWithSidebar(
     tabPanel("Heatmap",
       uiOutput("heatmapVariableSelection"),
       mainPanel(
-        plotOutput("heatmapPlot", height="600px")
+        plotOutput("heatmapPlot", height=plotHeight)
       )
     ),
     # stacked bar plot
     tabPanel("Stacked bar plot",
              uiOutput("stackedbarVariableSelection"),
              mainPanel(
-               plotOutput("stackedbarPlot", height="600px")
+               plotOutput("stackedbarPlot", height=plotHeight)
              )
     ),    
  

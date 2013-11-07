@@ -303,6 +303,7 @@ shinyServer(function(input, output) {
       conditionalPanel(
         condition = "input.scatterPlotOptions == true",
         sliderInput("scatterFontSize", "Font size", min=0.01, max=3.01, value=1.5),
+	sliderInput("scatterPointSize", "Point size", min=0.01, max=3.01, value=1.0),
         sliderInput("scatterMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
         sliderInput("scatterMarRight", "Right margin", min=0.01, max=10.01, value=2.1),
         sliderInput("scatterMarTop", "Top margin", min=0.01, max=10.01, value=4.1),
@@ -318,21 +319,34 @@ shinyServer(function(input, output) {
     )
   })
 
+  scatterCVlist<-reactive({
+      colorVariable<-which(colnames(allData())==input$scatterColorVariable)
+      CVlist <- getColor(allData()[,colorVariable], type=input$scatterColorType, numCat=input$nscatterColorCat)
+      CVlist
+  })
+
+  scatterX<-reactive({
+      as.numeric(allData()[,which(colnames(allData())==input$variable1)])
+  })
+
+  scatterY<-reactive({
+      as.numeric(allData()[,which(colnames(allData())==input$variable2)])
+  })
+
   # generate scatter plot
   plotScatter<-function(){
     layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
     par(mar=c(input$scatterMarBottom,input$scatterMarLeft,input$scatterMarTop,input$scatterMarRight))
-    colorVariable<-which(colnames(allData())==input$scatterColorVariable)
-    CVlist <- getColor(allData()[,colorVariable], type=input$scatterColorType, numCat=input$nscatterColorCat)
-    colorV <- CVlist[[1]]
-    valueV <- CVlist[[2]]
-    plot(as.numeric(allData()[,which(colnames(allData())==input$variable1)]), 
-         as.numeric(allData()[,which(colnames(allData())==input$variable2)]), 
+    colorV <- scatterCVlist()[[1]]
+    valueV <- scatterCVlist()[[2]]
+    plot(scatterX(), 
+         scatterY(), 
          xlab=input$scatterXlab, 
          ylab=input$scatterYlab, 
          main=input$scatterTitle,
-         col=colorV,
-         cex.axis=input$scatterFontSize, cex.main=input$scatterFontSize, cex.lab=input$scatterFontSize
+         col=colorV, pch="O",
+         cex.axis=input$scatterFontSize, cex.main=input$scatterFontSize, 
+         cex.lab=input$scatterFontSize, cex=input$scatterPointSize
     )
     plotLegend(colorV, valueV, gradient=(input$scatterColorType=="gradient"), 
                title=input$scatterKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
@@ -398,6 +412,7 @@ shinyServer(function(input, output) {
       conditionalPanel(
         condition = "input.pcaPlotOptions == true",
         sliderInput("pcaFontSize", "Font size", min=0.01, max=3.01, value=1.5),
+        sliderInput("pcaPointSize", "Point size", min=0.01, max=3.01, value=1),
         sliderInput("pcaMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
         sliderInput("pcaMarRight", "Right margin", min=0.01, max=10.01, value=2.1),
         sliderInput("pcaMarTop", "Top margin", min=0.01, max=10.01, value=4.1),
@@ -435,21 +450,27 @@ shinyServer(function(input, output) {
     vars<-apply(pcaObject(), 2, sd)^2
     round(vars/sum(vars)*100, digits=2)
   })
+
+  pcaCVlist<-reactive({
+     colorVariable<-which(colnames(allData())==input$pcaColorVariable)
+     CVlist<-getColor(allData()[,colorVariable], type=input$pcaColorType, numCat=input$npcaColorCat)
+     CVlist
+  })
+
   # generate PCA plot
   plotPca <- function(){
     layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
     par(mar=c(input$pcaMarBottom,input$pcaMarLeft,input$pcaMarTop,input$pcaMarRight))
     
-    colorVariable<-which(colnames(allData())==input$pcaColorVariable)
-    CVlist<-getColor(allData()[,colorVariable], type=input$pcaColorType, numCat=input$npcaColorCat)
-    colorV <- CVlist[[1]]
-    valueV <- CVlist[[2]]
+    colorV <- pcaCVlist()[[1]]
+    valueV <- pcaCVlist()[[2]]
     plot(pcX(), pcY(), 
          xlab=input$pcaXlab, 
          ylab=input$pcaYlab, 
          main=input$pcaTitle,
-         col=colorV,
-         cex.axis=input$pcaFontSize, cex.main=input$pcaFontSize, cex.lab=input$pcaFontSize
+         col=colorV, pch="O",
+         cex.axis=input$pcaFontSize, cex.main=input$pcaFontSize, 
+         cex.lab=input$pcaFontSize, cex=input$pcaPointSize
     )
     plotLegend(colorV, valueV, gradient=(input$pcaColorType=="gradient"), 
                title=input$pcaKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
@@ -457,7 +478,7 @@ shinyServer(function(input, output) {
     )
   }
 
-  # sacce PCA plot
+  # save PCA plot
   output$savePca <- downloadHandler(
     filename = function() { paste("PCAplot", fileExtension(), sep=".") },
     content = function(filename) {
