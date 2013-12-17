@@ -150,7 +150,8 @@ shinyUI(pageWithSidebar(
     # help
     tabPanel("Help",
       sidebarPanel(
-        selectInput("helpTopic", "Help topic", choices=c("About", "Data", "Histogram", "Scatter", "PCA", "Bar plot", "Cluster", "WGCNA", "Heatmap", "Color"))
+        selectInput("helpTopic", "Help topic", choices=c("About", "Data", "Histogram", "Scatter", 
+                    "PCA", "Bar plot", "Cluster", "WGCNA", "Heatmap", "Color"))
       ),
       mainPanel(
         conditionalPanel(
