@@ -1035,6 +1035,9 @@ shinyServer(function(input, output) {
       checkboxInput("stackedbarPlotOptions", "Show plot options"),
       conditionalPanel(
         condition = "input.stackedbarPlotOptions == true",
+        checkboxInput("stackedbarLabelPlot","Label highest order factor on plot",value=TRUE),
+        checkboxInput("stackedbarListOrder","List all ordered factors in bottom margin",value=TRUE),
+        checkboxInput("stackedbarSpaceOrder", "Draw spaces between ordered factors",value=TRUE),
         sliderInput("stackedbarFontSize", "Font size", min=0.01, max=3.01, value=1.5),
         sliderInput("stackedbarMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
         sliderInput("stackedbarMarRight", "Right margin", min=0.01, max=10.01, value=2.1),
@@ -1053,93 +1056,119 @@ shinyServer(function(input, output) {
   
   # data for stacked bar plot
   stackedData <- reactive({
-      reorder<-FALSE
-      sbov1<-input$stackedBarOrderVariable1
-      sbov2<-input$stackedBarOrderVariable2
-      sbov3<-input$stackedBarOrderVariable3
-      if (sbov1!="None") sampleOrderFeature1<-allData()[,which(colnames(allData())==sbov1)]
-      if (sbov2!="None") sampleOrderFeature2<-allData()[,which(colnames(allData())==sbov2)]
-      if (sbov3!="None") sampleOrderFeature3<-allData()[,which(colnames(allData())==sbov3)]
-      if (sbov1!="None") {sampleOrder<-order(sampleOrderFeature1, decreasing=T); reorder<-TRUE}
-      if ((sbov1!="None") & (sbov2!="None")){
-        sampleOrder<-order(sampleOrderFeature1, sampleOrderFeature2, decreasing=T)
-        reorder<-TRUE
-      }
-      if ((sbov1!="None") & (sbov2!="None") & (sbov3!="None")) {
-        sampleOrder<-order(sampleOrderFeature1, sampleOrderFeature2, 
-                           sampleOrderFeature3, decreasing=T)
-        reorder<-TRUE
-      }
+    reorder<-TRUE
+    sbov1<-input$stackedBarOrderVariable1
+    sbov2<-input$stackedBarOrderVariable2
+    sbov3<-input$stackedBarOrderVariable3
+    cond1 = sbov1 != "None"
+    cond2 = sbov2 != "None"
+    cond3 = sbov3 != "None" 
+    if (cond1) sampleOrderFeature1<-allData()[,which(colnames(allData())==sbov1)]
+    if (cond2) sampleOrderFeature2<-allData()[,which(colnames(allData())==sbov2)]
+    if (cond3) sampleOrderFeature3<-allData()[,which(colnames(allData())==sbov3)]
 
-      #### Construct vector of breaks between order variables
-      dataLength = dim(allData())[1]
-      if (sbov1!="None" && (is.factor(sampleOrderFeature1) || is.character(sampleOrderFeature1))){ 
+ 
+    if(cond3) { 
+        if(cond2) {
+            if(cond1) {
+                sampleOrder <- order(sampleOrderFeature1,
+                                     sampleOrderFeature2,
+                                     sampleOrderFeature3, decreasing=TRUE)
+            }else{
+                sampleOrder <- order(sampleOrderFeature2,
+                                     sampleOrderFeature3, decreasing=TRUE)
+            }
+        }else{
+            if(cond1) {
+                sampleOrder <- order(sampleOrderFeature1,
+                                     sampleOrderFeature3, decreasing=TRUE)
+            }else{
+                sampleOrder <- order(sampleOrderFeature3, decreasing=TRUE)
+            }
+        }
+    }else{
+        if(cond2) {
+            if(cond1) {
+                sampleOrder <- order(sampleOrderFeature1,
+                                     sampleOrderFeature2, decreasing=TRUE)
+            }else{
+                sampleOrder <- order(sampleOrderFeature2, decreasing=TRUE)
+            }
+        }else{
+            if(cond1) {
+                sampleOrder <- order(sampleOrderFeature1, decreasing=TRUE)
+            }else{
+                reorder = FALSE
+            }
+        }
+    }
+
+    #### Construct vector of breaks between order variables
+    dataLength = dim(allData())[1]
+    if (sbov1!="None" && (is.factor(sampleOrderFeature1) || is.character(sampleOrderFeature1))){ 
         orderedFeature1 <- as.numeric(sampleOrderFeature1[sampleOrder]) 
         breakLabels1 = paste("Order1: ",
-            paste(
-                levels(sampleOrderFeature1)[levels(sampleOrderFeature1)%in%sampleOrderFeature1], 
-                collapse=" | " 
-            )
+            paste( rev(levels(sampleOrderFeature1)),collapse=" | " )
         )
-      }  
-      else {
+    }  
+    else {
         orderedFeature1 = rep(0,dataLength)
         breakLabels1 = ""
-      }
-      breaks1 = orderedFeature1[1:(dataLength-1)]-orderedFeature1[2:dataLength]
+    }
+    breaks1 = orderedFeature1[1:(dataLength-1)]-orderedFeature1[2:dataLength]
      
-      if (sbov2!="None" && (is.factor(sampleOrderFeature2) || is.character(sampleOrderFeature2))){ 
+    if (sbov2!="None" && (is.factor(sampleOrderFeature2) || is.character(sampleOrderFeature2))){ 
         orderedFeature2 <- as.numeric(sampleOrderFeature2[sampleOrder])
         breakLabels2 = paste("Order2: ",
-            paste(
-                levels(sampleOrderFeature2)[levels(sampleOrderFeature2)%in%sampleOrderFeature2], 
-                collapse=" | " 
-            )
+            paste( rev(levels(sampleOrderFeature2)),collapse=" | " ) 
         )
-      } 
-      else {
+    } 
+    else {
         orderedFeature2 = rep(0,dataLength)  
         breakLabels2 = ""
-      }
-      breaks2 = orderedFeature2[1:(dataLength-1)]-orderedFeature2[2:dataLength]
-      breaks2 = breaks2 * !breaks1
+    }
+    breaks2 = orderedFeature2[1:(dataLength-1)]-orderedFeature2[2:dataLength]
+    breaks2 = breaks2 * !breaks1
       
-      if (sbov3!="None" && (is.factor(sampleOrderFeature3) || is.character(sampleOrderFeature3))){ 
+    if (sbov3!="None" && (is.factor(sampleOrderFeature3) || is.character(sampleOrderFeature3))){ 
         orderedFeature3 <- as.numeric(sampleOrderFeature3[sampleOrder]) 
         breakLabels3 = paste("Order3: ",
-            paste(
-                levels(sampleOrderFeature3)[levels(sampleOrderFeature3)%in%sampleOrderFeature3], 
-                collapse=" | " 
-            )
+            paste( rev(levels(sampleOrderFeature3)),collapse=" | " )
         )
-      }
-      else {
+    }
+    else {
         orderedFeature3 = rep(0,dataLength)
         breakLabels3 = ""
-      }
-      breaks3 = orderedFeature3[1:(dataLength-1)]-orderedFeature3[2:dataLength]
-      breaks3 = breaks3 * !breaks2 * breaks1
-      breaks = 10 * breaks1 + 4 * breaks2 + 1 * breaks3
-      breakLabels = paste(breakLabels1,breakLabels2,breakLabels3, sep="    ")   
-    
-      topMicrobeCols<-order(apply(microbeData(), 2, sum), decreasing=T)
-      topMicrobes<-microbeData()[,topMicrobeCols[1:input$numBars]]
-      otherMicrobes<-microbeData()[,topMicrobeCols[(input$numBars+1):length(topMicrobeCols)]]
-      Other<-apply(otherMicrobes, 1, sum)
-      newData<-cbind(topMicrobes, Other)
-      if (reorder) newData <- newData[sampleOrder,]
+    }
+    breaks3 = orderedFeature3[1:(dataLength-1)]-orderedFeature3[2:dataLength]
+    breaks3 = breaks3 * (!breaks2 | !breaks1)
+ #   browser()
 
-      # changed return value to include vector of breaks for plot spacing
-      list(newData,breaks,breakLabels)  
+    breakLabels = paste(breakLabels1,breakLabels2,breakLabels3, sep="    ")   
+    
+    topMicrobeCols<-order(apply(microbeData(), 2, sum), decreasing=T)
+    topMicrobes<-microbeData()[,topMicrobeCols[1:input$numBars]]
+    otherMicrobes<-microbeData()[,topMicrobeCols[(input$numBars+1):length(topMicrobeCols)]]
+    Other<-apply(otherMicrobes, 1, sum)
+    newData<-cbind(topMicrobes, Other)
+    if (reorder) newData <- newData[sampleOrder,]
+
+     # changed return value to include vector of breaks for plot spacing
+     list(newData,breaks1,breaks2,breaks3,breakLabels)  
       
   })
   
   # stacked bar plot
   plotStackedbar <- function(){
+ 
 
     stackedData = stackedData()[[1]]
-    breaks = stackedData()[[2]]
-    breakLabels = stackedData()[[3]]
+    breaks1     = stackedData()[[2]]
+    breaks2     = stackedData()[[3]]
+    breaks3     = stackedData()[[4]]
+    breakLabels = stackedData()[[5]]
+
+    breaks = 8 * breaks1 + 2 * breaks2 + 2 * breaks3
 
     layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
     par(mar=c(input$stackedbarMarBottom,input$stackedbarMarLeft,
@@ -1147,7 +1176,9 @@ shinyServer(function(input, output) {
     colorV<-discreteColors(input$numBars+1)
     colorV<-colorV[as.numeric(unlist(strsplit(input$stackedbarColorOrder,split=",")))]
     valueV<-colnames(stackedData)
-    
+
+ 
+    if(!input$stackedbarSpaceOrder) breaks = 0
     barplot(t(stackedData), 
          beside=F,
          space=c(0,breaks),
@@ -1158,10 +1189,39 @@ shinyServer(function(input, output) {
          cex.lab=input$stackedbarFontSize, cex.main=input$stackedbarFontSize, las=3
     )
 
-    
+
+    ### get locations of breaks to label
+    if (sum(breaks1)) {  #check to see which variable is the highest order break
+        sbov<-input$stackedBarOrderVariable1 
+        sampleOrderFeature<-allData()[,which(colnames(allData())==sbov)]
+        breakValues = which(as.logical(breaks1))
+        labelbreaks = breaks1
+        
+    }else if (sum(breaks2)){
+        sbov<-input$stackedBarOrderVariable2 
+        sampleOrderFeature<-allData()[,which(colnames(allData())==sbov)]
+        breakValues = which(as.logical(breaks2))
+        labelbreaks = breaks2
+        
+    }else if (sum(breaks3)){
+        sbov<-input$stackedBarOrderVariable3 
+        sampleOrderFeature<-allData()[,which(colnames(allData())==sbov)]
+        breakValues = which(as.logical(breaks3))
+        labelbreaks = breaks3
+    }
+
+    if(input$stackedbarLabelPlot) {  #Label bar plot
+        breakSums = sapply(breakValues, function(X) sum(breaks[1:X]))
+        numBreaks = length(breakValues)
+        factorLabelX = rev(c(0, breakValues + breakSums))
+        text(factorLabelX,0.98,levels(sampleOrderFeature),pos=4,cex=1.4)
+
+    }  
+    # list orders below bar plot e.g. A | B | C
+    if(input$stackedbarListOrder) mtext(breakLabels,side=1,line=5)
     plotLegend(colorV, valueV, gradient=F, cex=input$stackedbarKeyFontSize, 
                keyCol=input$stackedbarKeyColumns)
-    mtext(breakLabels,side=3,line=37)
+    
 
   }
   
@@ -1185,7 +1245,8 @@ shinyServer(function(input, output) {
   
   # display stacked bar plot of the requested variable
   output$stackedbarPlot <- renderPlot(
-    plotStackedbar()
+    try( plotStackedbar(),silent=TRUE )
+    
   )
 
 ###################################################################################################
