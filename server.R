@@ -6,10 +6,8 @@ library(shiny)
 library(vegan)
 library(WGCNA)
 library(gplots)
-library(labdsv)
 
 shinyServer(function(input, output) {
-
 
 ##################################################################################################*
 ###################################### FUNCTIONS #################################################*
@@ -77,22 +75,12 @@ shinyServer(function(input, output) {
     }
   }
 
-
   # tests to see if file is square (if it has column names for every column)
   isSquare<-function(filename, sep){
-    headLines = readLines(filename,2)
-    headLines[2] = paste(headLines[2], "arbitrary_string", sep="")
-    test<-sapply(sapply(headLines, function(i) strsplit(i,sep)), length)
+    test<-sapply(sapply(readLines(filename,2), function(i) strsplit(i,sep)), length)
     return(test[1]==test[2])
   }
 
-#  isSquare<-function(filename, sep){
-#    test<-sapply(sapply(readLines(filename,2), function(i) strsplit(i,sep)), length)
-#    browser()
-#    return(test[1]==test[2])
-
-#  }
-  
 # This isn't working for some reason
 #   # save plot function
 #   savePlot<-function(fileName="error", plotFunction, fileExt){
@@ -248,7 +236,8 @@ shinyServer(function(input, output) {
   # generate summary of histogram variable for display in sidebar
   output$varSum <- renderTable({
     s<-as.matrix(summary(allData()[,which(colnames(allData())==input$variable)]))
-    colnames(s)<-input$variables
+    colnames(s)<-input$variable
+    s
   })
   
   # histogram plot
@@ -280,13 +269,11 @@ shinyServer(function(input, output) {
       }
     }
   )
-
-
+  
   # display histogram of the requested variable
-  output$histPlot <- renderPlot(
+  output$histPlot <- renderPlot({
     plotHistogram()
-  )
-
+  })
   
 ###################################################################################################
 ########################################### SCATTER PLOT ##########################################
@@ -396,9 +383,9 @@ shinyServer(function(input, output) {
   )
   
   # Generate scatter plot of the requested variables
-  output$scatterPlot <- renderPlot(
+  output$scatterPlot <- renderPlot({
     plotScatter()
-  )
+  })
   
 ###################################################################################################
 ############################################## PCA ################################################
@@ -532,8 +519,103 @@ shinyServer(function(input, output) {
   output$pcaPlot <- renderPlot({
     plotPca()
   })
+  
+###################################################################################################
+############################################ BAR PLOT #############################################
+###################################################################################################
 
+  # dynamic bar plot UI
+  output$barVariableSelection <- renderUI({
+    sidebarPanel(
+      selectInput("barVariable", "Value variable:", choices = colnames(allData())),
+      selectInput("categoryVariable", "Bar variable:", choices = colnames(allData())),
+      checkboxInput("barCat", "Categorize bar variable", FALSE),
+      conditionalPanel(
+        condition = "input.barCat == true",
+        numericInput("nbarCat", "Number of categories:", 4)
+      ),
+      helpText("The number of samples in each category is shown in blue."),
+      helpText("95% confidence intervals assume normality and independence."),
+      helpText("NA values are automatically omitted."),
+      HTML('<br><br>'),
+      HTML('<div align="right">'),
+      downloadButton("saveBar", "Save Plot"),
+      HTML('</div>'),
+      uiOutput("barPlotOptions")
+    )
+  })
     
+  output$barPlotOptions <- renderUI({
+    mainPanel(
+      checkboxInput("barPlotOptions", "Show plot options"),
+      conditionalPanel(
+        condition = "input.barPlotOptions == true",
+        sliderInput("barFontSize", "Font size", min=0.01, max=3.01, value=1.5),
+        sliderInput("barMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
+        sliderInput("barMarRight", "Right margin", min=0.01, max=10.01, value=2.1),
+        sliderInput("barMarTop", "Top margin", min=0.01, max=10.01, value=4.1),
+        sliderInput("barMarBottom", "Bottom margin", min=0.01, max=10.01, value=5.1),
+        textInput("barXlab", "X label", value=input$categoryVariable),
+        textInput("barYlab", "Y label", value=input$barVariable),
+        textInput("barTitle", "Title", value="")
+      )
+    )
+  })
+
+  plotBar <- function(){
+    barVarCol<-which(colnames(allData())==input$barVariable)
+    catVarCol<-which(colnames(allData())==input$categoryVariable)
+    groupedValues<-split(allData()[,barVarCol],allData()[,catVarCol])
+    if (input$barCat){
+      newCats<-cut(allData()[,catVarCol], input$nbarCat)
+      barNames<-levels(newCats)
+      groupedValues<-split(allData()[,barVarCol], as.numeric(newCats))
+    }
+    means<-sapply(groupedValues, function(i) mean(i, na.rm=T))
+    if (input$barCat){
+      names(means)<-barNames
+    }
+    sds<-sapply(groupedValues, function(i) sd(i, na.rm=T))
+    sds[is.na(sds)]<-0
+    ns<-sapply(lapply(groupedValues, na.omit), length)
+    errors<-qnorm(0.975)*sds/sqrt(ns)
+    par(mar=c(input$barMarBottom,input$barMarLeft,input$barMarTop,input$barMarRight))
+    x<-barplot(means, 
+               xlab=input$barXlab, 
+               ylab=input$barYlab, 
+               ylim=c(min(means-errors), max(means+errors)),
+               main=input$barTitle,
+               xpd=F,
+               col="#f5f5f5",
+               cex.axis=input$barFontSize, cex.names=input$barFontSize, 
+               cex.lab=input$barFontSize, cex.main=input$barFontSize
+    )
+    arrows(x,means+errors,x,means-errors,code=0)
+    text(x,min(means-errors)+(max(means+errors)-min(means-errors))/20, 
+         ns, col="blue", cex=input$barFontSize       )
+  }
+
+  output$saveBar <- downloadHandler(
+    filename = function() { paste("barPlot", fileExtension(), sep=".") },
+    content = function(filename) {
+      if (fileExtension()=="png"){
+        png(filename, width=2000, height=2000, units="px", pointsize=25*input$barFontSize)
+        plotBar()
+        dev.off()
+      }
+      if (fileExtension()=="pdf"){
+        pdf(filename, width=10, height=10)
+        plotBar()
+        dev.off()
+      }
+    }
+  )
+  
+  # Generate barplot of the requested variable
+  output$barPlot <- renderPlot({
+    plotBar()
+  })
+  
 ###################################################################################################
 ############################################# CLUSTER #############################################
 ###################################################################################################
@@ -723,263 +805,6 @@ shinyServer(function(input, output) {
   )
 
 ###################################################################################################
-############################################ BAR PLOT #############################################
-###################################################################################################
-
-  # dynamic bar plot UI
-  output$barVariableSelection <- renderUI({
-    sidebarPanel(
-      selectInput("barVariable", "Value variable:", choices = colnames(allData())),
-      selectInput("categoryVariable", "Bar variable:", choices = colnames(allData())),
-      checkboxInput("barCat", "Categorize bar variable", FALSE),
-      conditionalPanel(
-        condition = "input.barCat == true",
-        numericInput("nbarCat", "Number of categories:", 4)
-      ),
-      helpText("The number of samples in each category is shown in blue."),
-      helpText("95% confidence intervals assume normality and independence."),
-      helpText("NA values are automatically omitted."),
-      HTML('<br><br>'),
-      HTML('<div align="right">'),
-      downloadButton("saveBar", "Save Plot"),
-      HTML('</div>'),
-      uiOutput("barPlotOptions")
-    )
-  })
-    
-  output$barPlotOptions <- renderUI({
-    mainPanel(
-      checkboxInput("barPlotOptions", "Show plot options"),
-      conditionalPanel(
-        condition = "input.barPlotOptions == true",
-        sliderInput("barFontSize", "Font size", min=0.01, max=3.01, value=1.5),
-        sliderInput("barMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
-        sliderInput("barMarRight", "Right margin", min=0.01, max=10.01, value=2.1),
-        sliderInput("barMarTop", "Top margin", min=0.01, max=10.01, value=4.1),
-        sliderInput("barMarBottom", "Bottom margin", min=0.01, max=10.01, value=5.1),
-        textInput("barXlab", "X label", value=input$categoryVariable),
-        textInput("barYlab", "Y label", value=input$barVariable),
-        textInput("barTitle", "Title", value="")
-      )
-    )
-  })
-
-  plotBar <- function(){
-    barVarCol<-which(colnames(allData())==input$barVariable)
-    catVarCol<-which(colnames(allData())==input$categoryVariable)
-    groupedValues<-split(allData()[,barVarCol],allData()[,catVarCol])
-    if (input$barCat){
-      newCats<-cut(allData()[,catVarCol], input$nbarCat)
-      barNames<-levels(newCats)
-      groupedValues<-split(allData()[,barVarCol], as.numeric(newCats))
-    }
-    means<-sapply(groupedValues, function(i) mean(i, na.rm=T))
-    if (input$barCat){
-      names(means)<-barNames
-    }
-    sds<-sapply(groupedValues, function(i) sd(i, na.rm=T))
-    sds[is.na(sds)]<-0
-    ns<-sapply(lapply(groupedValues, na.omit), length)
-    errors<-qnorm(0.975)*sds/sqrt(ns)
-    par(mar=c(input$barMarBottom,input$barMarLeft,input$barMarTop,input$barMarRight))
-    x<-barplot(means, 
-               xlab=input$barXlab, 
-               ylab=input$barYlab, 
-               ylim=c(min(means-errors), max(means+errors)),
-               main=input$barTitle,
-               xpd=F,
-               col="#f5f5f5",
-               cex.axis=input$barFontSize, cex.names=input$barFontSize, 
-               cex.lab=input$barFontSize, cex.main=input$barFontSize
-    )
-    arrows(x,means+errors,x,means-errors,code=0)
-    text(x,min(means-errors)+(max(means+errors)-min(means-errors))/20, 
-         ns, col="blue", cex=input$barFontSize       )
-  }
-
-  output$saveBar <- downloadHandler(
-    filename = function() { paste("barPlot", fileExtension(), sep=".") },
-    content = function(filename) {
-      if (fileExtension()=="png"){
-        png(filename, width=2000, height=2000, units="px", pointsize=25*input$barFontSize)
-        plotBar()
-        dev.off()
-      }
-      if (fileExtension()=="pdf"){
-        pdf(filename, width=10, height=10)
-        plotBar()
-        dev.off()
-      }
-    }
-  )
-  
-  # Generate barplot of the requested variable
-  output$barPlot <- renderPlot(
-    plotBar()
-  )
-  
-###################################################################################################
-############################################# PCoA ###############################################
-###################################################################################################
-
-
-  #  PCoA UI
-  output$pcoaVariableSelection <- renderUI({
-    sidebarPanel(
-      numericInput("pcoX", "Principal coordinate X:", 1),
-      numericInput("pcoY", "Principal coordinate Y:", 2), 
-      selectInput("distMethod", "Distance method:", 
-          choices = c("euclidean", "manhattan", "canberra", "bray", "kulczynski", 
-                      "jaccard","gower", "altGower", "morisita", "horn", 
-                      "mountford", "raup", "binomial", "chao", "cao")),
-      selectInput("pcoaColorVariable", "Color variable:", choices = colnames(allData())),
-      radioButtons("pcoaColorType", "Color options:", 
-                   list("Unique" = "unique",
-                        "Gradient" = "gradient",
-                        "Categories" = "category")
-      ),
-      conditionalPanel(
-        condition = 'input.pcoaColorType == "category"',
-        numericInput("npcoaColorCat", "Number of categories:", 4)
-      ),
-      HTML('<br><br><br>'),
-      HTML('<div align="right">'),
-      downloadButton("savePcoa", "Save Plot"),
-      HTML('<br><br>'),
-      downloadButton("savePcoaEigen", "Save Eigenvectors"),
-      HTML('</div>'),
-      uiOutput("pcoaPlotOptions")
-    )
-  })
-
-  output$pcoaPlotOptions <- renderUI({
-    mainPanel(
-      checkboxInput("pcoaPlotOptions", "Show plot options"),
-      conditionalPanel(
-        condition = "input.pcoaPlotOptions == true",
-        sliderInput("pcoaFontSize", "Font size", min=0.01, max=3.01, value=1.5),
-        sliderInput("pcoaPointSize", "Point size", min=0.01, max=3.01, value=1),
-        sliderInput("pcoaMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
-        sliderInput("pcoaMarRight", "Right margin", min=0.01, max=10.01, value=2.1),
-        sliderInput("pcoaMarTop", "Top margin", min=0.01, max=10.01, value=4.1),
-        sliderInput("pcoaMarBottom", "Bottom margin", min=0.01, max=10.01, value=5.1),
-        textInput("pcoaXlab", "X label", value=paste("Principal coordinates", 
-                  input$pcoX, " (", pcoaPV()[input$pcoX], "%)", sep="")),
-        textInput("pcoaYlab", "Y label", value=paste("Principal coordinates", 
-                  input$pcoY, " (", pcoaPV()[input$pcoY], "%)", sep="")),
-        textInput("pcoaTitle", "Title", value=paste("Scatter plot of principal coordinates")),
-        textInput("pcoaKeyTitle", "Legend title", value=input$pcoaColorVariable),
-        sliderInput("pcoaKeyFontSize", "Legend font size", min=0.01, max=3.01, value=1.5),
-        sliderInput("pcoaKeyColumns", "Number of legend columns", min=1, max=15, value=3)
-        
-      )
-    )
-  })
-
-
-
-  pcoaData <- reactive({
-    if (input$pcoaChoice == "Metadata"){ data <- metaData() }
-    if (input$pcoaChoice == "Microbe data"){ data <- microbeData() }
-    if (input$pcoaChoice == "All data"){ data <- allData()}
-    if (input$pcoaChoice == "Custom"){
-      data <- allData()[,match(input$customPCOAVariables, colnames(allData()))]
-    }
-    # non-numeric values cause PCOA plot to fail. This converts them to numbers
-    # apply statements fail for unknown reasons
-    for (column in 1:ncol(data)){
-      data[,column]<-as.numeric(data[,column])
-    }
-
-    data
-  })
-  
-  pcoaDist <- reactive({
-    vegdist(pcoaData(), method=input$distMethod, na.rm=T)
-  })
-
-  pcoaEigen<-reactive({
-    
-    eigenMat<-eigen(pcoaDist())$vectors 
-    row.names(eigenMat)<-names(pcoaData())
-    colnames(eigenMat)<-paste("ev", 1:ncol(eigenMat), sep="")
-    eigenMat
-  })
-  pcoaObject<-reactive({
-    as.matrix(microbeData()) %*% pcaEigen()
-  })
-  pcoX<-reactive({
-    pcoaObject()[,input$pcoX]
-  })
-  pcoY<-reactive({
-    pcoaObject()[,input$pcoY]
-  })
-  # % variation explained
-  pcoaPV<-reactive({
-    vars<-apply(pcaObject(), 2, sd)^2
-    round(vars/sum(vars)*100, digits=2)
-  })
-
-  pcoaCVlist<-reactive({
-     colorVariable<-which(colnames(allData())==input$pcoaColorVariable)
-     CVlist<-getColor(allData()[,colorVariable], 
-                      type=input$pcoaColorType, numCat=input$npcoaColorCat)
-     CVlist
-  })
-
-  # generate PCA plot
-  plotPcoa <- function(){
-    layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
-    par(mar=c(input$pcoaMarBottom,input$pcoaMarLeft,input$pcoaMarTop,input$pcoaMarRight))
-    
-    colorV <- pcoaCVlist()[[1]]
-    valueV <- pcoaCVlist()[[2]]
-    plot(pcoX(), pcoY(), 
-         xlab=input$pcoaXlab, 
-         ylab=input$pcoaYlab, 
-         main=input$pcoaTitle,
-         col=colorV, pch="O",
-         cex.axis=input$pcoaFontSize, cex.main=input$pcaFontSize, 
-         cex.lab=input$pcoaFontSize, cex=input$pcoaPointSize
-    )
-    plotLegend(colorV, valueV, gradient=(input$pcoaColorType=="gradient"), 
-      title=input$pcoaKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
-      max=max(as.numeric(valueV), na.rm=T), cex=input$pcoaKeyFontSize, keyCol=input$pcoaKeyColumns
-    )
-  }
-
-  # save PCA plot
-  output$savePcoa <- downloadHandler(
-    filename = function() { paste("PCoAplot", fileExtension(), sep=".") },
-    content = function(filename) {
-      if (fileExtension()=="png"){
-        png(filename, width=2000, height=2000, units="px", pointsize=25*input$pcaFontSize)
-        plotPcoa()
-        dev.off()
-      }
-      if (fileExtension()=="pdf"){
-        pdf(filename, width=10, height=10)
-        plotPcoa()
-        dev.off()
-      }
-    }
-  )
-
-  output$savePcoaEigen <- downloadHandler(
-    filename = function() { paste("PCoAeigenvectors", "csv", sep=".") },
-    content = function(filename) {
-      write.csv(file=filename, x=pcoaEigen(), quote=F)
-    }
-  )
-
-  # display PCoA plot
-  output$pcoaPlot <- renderPlot(
-    plotPcoa()
-  )
-  
-
-
-###################################################################################################
 ############################################## WGCNA ##############################################
 ###################################################################################################
 
@@ -1161,9 +986,9 @@ shinyServer(function(input, output) {
   
   }
 
-  output$heatmapPlot <- renderPlot(
+  output$heatmapPlot <- renderPlot({
     plotHeatmap()
-  )
+  })
 
   output$saveHeatmap <- downloadHandler(
     filename = function() { paste("heatmapPlot", fileExtension(), sep=".") },
@@ -1201,17 +1026,17 @@ shinyServer(function(input, output) {
       HTML('<div align="right">'),
       downloadButton("saveStackedbar", "Save Plot"),
       HTML('</div>'),
-      uiOutput("stackedBarPlotOptions")
+      uiOutput("stackedbarPlotOptions")
     )
   })
 
-  output$stackedBarPlotOptions <- renderUI({
+  output$stackedbarPlotOptions <- renderUI({
     mainPanel(
-      checkboxInput("stackedBarPlotOptions", "Show plot options"),
+      checkboxInput("stackedbarPlotOptions", "Show plot options"),
       conditionalPanel(
-        condition = "input.stackedBarPlotOptions == true",
+        condition = "input.stackedbarPlotOptions == true",
         checkboxInput("stackedbarLabelPlot","Label highest order factor on plot",value=TRUE),
-        checkboxInput("stackedbarListOrder","List ordered factors in bottom margin",value=TRUE),
+        checkboxInput("stackedbarListOrder","List all ordered factors in bottom margin",value=TRUE),
         checkboxInput("stackedbarSpaceOrder", "Draw spaces between ordered factors",value=TRUE),
         sliderInput("stackedbarFontSize", "Font size", min=0.01, max=3.01, value=1.5),
         sliderInput("stackedbarMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
@@ -1232,15 +1057,15 @@ shinyServer(function(input, output) {
   # data for stacked bar plot
   stackedData <- reactive({
     reorder<-TRUE
-    sbov1 <- input$stackedBarOrderVariable1
-    sbov2 <- input$stackedBarOrderVariable2
-    sbov3 <- input$stackedBarOrderVariable3
-    cond1 <- sbov1 != "None"
-    cond2 <- sbov2 != "None"
-    cond3 <- sbov3 != "None" 
-    if (cond1) sampleOrderFeature1 <- allData()[,which(colnames(allData())==sbov1)]
-    if (cond2) sampleOrderFeature2 <- allData()[,which(colnames(allData())==sbov2)]
-    if (cond3) sampleOrderFeature3 <- allData()[,which(colnames(allData())==sbov3)]
+    sbov1<-input$stackedBarOrderVariable1
+    sbov2<-input$stackedBarOrderVariable2
+    sbov3<-input$stackedBarOrderVariable3
+    cond1 = sbov1 != "None"
+    cond2 = sbov2 != "None"
+    cond3 = sbov3 != "None" 
+    if (cond1) sampleOrderFeature1<-allData()[,which(colnames(allData())==sbov1)]
+    if (cond2) sampleOrderFeature2<-allData()[,which(colnames(allData())==sbov2)]
+    if (cond3) sampleOrderFeature3<-allData()[,which(colnames(allData())==sbov3)]
 
  
     if(cond3) { 
@@ -1296,7 +1121,7 @@ shinyServer(function(input, output) {
         orderedFeature2 <- as.numeric(sampleOrderFeature2[sampleOrder])
         breakLabels2 = paste("Order2: ",
             paste( rev(levels(sampleOrderFeature2)),collapse=" | " ) 
-                            )
+        )
     } 
     else {
         orderedFeature2 = rep(0,dataLength)  
@@ -1317,6 +1142,7 @@ shinyServer(function(input, output) {
     }
     breaks3 = orderedFeature3[1:(dataLength-1)]-orderedFeature3[2:dataLength]
     breaks3 = breaks3 * (!breaks2 | !breaks1)
+ #   browser()
 
     breakLabels = paste(breakLabels1,breakLabels2,breakLabels3, sep="    ")   
     
@@ -1327,7 +1153,8 @@ shinyServer(function(input, output) {
     newData<-cbind(topMicrobes, Other)
     if (reorder) newData <- newData[sampleOrder,]
 
-    list(newData,breaks1,breaks2,breaks3,breakLabels)  
+     # changed return value to include vector of breaks for plot spacing
+     list(newData,breaks1,breaks2,breaks3,breakLabels)  
       
   })
   
@@ -1417,8 +1244,9 @@ shinyServer(function(input, output) {
   )
   
   # display stacked bar plot of the requested variable
-  output$stackedBarPlot <- renderPlot(
-    plotStackedbar()
+  output$stackedbarPlot <- renderPlot(
+    try( plotStackedbar(),silent=TRUE )
+    
   )
 
 ###################################################################################################
