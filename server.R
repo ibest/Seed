@@ -6,7 +6,6 @@ library(shiny)
 library(vegan)
 library(WGCNA)
 library(gplots)
-library(labdsv)
 
 shinyServer(function(input, output) {
 
@@ -877,36 +876,17 @@ shinyServer(function(input, output) {
   })
 
 
-
-  pcoaData <- reactive({
-    if (input$pcoaChoice == "Metadata"){ data <- metaData() }
-    if (input$pcoaChoice == "Microbe data"){ data <- microbeData() }
-    if (input$pcoaChoice == "All data"){ data <- allData()}
-    if (input$pcoaChoice == "Custom"){
-      data <- allData()[,match(input$customPCOAVariables, colnames(allData()))]
-    }
-    # non-numeric values cause PCOA plot to fail. This converts them to numbers
-    # apply statements fail for unknown reasons
-    for (column in 1:ncol(data)){
-      data[,column]<-as.numeric(data[,column])
-    }
-
-    data
-  })
   
-  pcoaDist <- reactive({
-    vegdist(pcoaData(), method=input$distMethod, na.rm=T)
+
+
+  pcoaObject <- reactive({
+    capscaleObject()$CA$u.eig
   })
 
-  pcoaEigen<-reactive({
-    
-    eigenMat<-eigen(pcoaDist())$vectors 
-    row.names(eigenMat)<-names(pcoaData())
-    colnames(eigenMat)<-paste("ev", 1:ncol(eigenMat), sep="")
-    eigenMat
-  })
-  pcoaObject<-reactive({
-    as.matrix(microbeData()) %*% pcaEigen()
+  
+  capscaleObject<-reactive({
+    capscale(microbeData()~1, distance=input$distMethod)
+
   })
   pcoX<-reactive({
     pcoaObject()[,input$pcoX]
@@ -916,7 +896,7 @@ shinyServer(function(input, output) {
   })
   # % variation explained
   pcoaPV<-reactive({
-    vars<-apply(pcaObject(), 2, sd)^2
+    vars<-apply(pcoaObject(), 2, sd)^2
     round(vars/sum(vars)*100, digits=2)
   })
 
@@ -948,7 +928,7 @@ shinyServer(function(input, output) {
     )
   }
 
-  # save PCA plot
+  # save PCoA plot
   output$savePcoa <- downloadHandler(
     filename = function() { paste("PCoAplot", fileExtension(), sep=".") },
     content = function(filename) {
@@ -968,7 +948,7 @@ shinyServer(function(input, output) {
   output$savePcoaEigen <- downloadHandler(
     filename = function() { paste("PCoAeigenvectors", "csv", sep=".") },
     content = function(filename) {
-      write.csv(file=filename, x=pcoaEigen(), quote=F)
+      write.csv(file=filename, x=capscaleObject()$CA$v, quote=F)
     }
   )
 
