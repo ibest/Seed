@@ -88,6 +88,18 @@ shinyUI(pageWithSidebar(
                plotOutput("pcaPlot", height=plotHeight)
              )
     ),
+
+        
+    # PCoA tab
+    tabPanel("PCoA", 
+             uiOutput("pcoaVariableSelection"),
+             
+             mainPanel(
+                 plotOutput("pcoaPlot", height=plotHeight)
+             )
+             
+    ),
+    
     
     # bar charts
     tabPanel("Bar plot",
