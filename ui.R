@@ -155,7 +155,7 @@ shinyUI(pageWithSidebar(
     tabPanel("Stacked bar plot",
              uiOutput("stackedbarVariableSelection"),
              mainPanel(
-               plotOutput("stackedbarPlot", height=plotHeight)
+               plotOutput("stackedBarPlot", height=plotHeight)
              )
     ),    
  

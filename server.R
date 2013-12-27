@@ -1211,6 +1211,7 @@ shinyServer(function(input, output) {
   
   # data for stacked bar plot
   stackedData <- reactive({
+
     reorder<-TRUE
     sbov1 <- input$stackedBarOrderVariable1
     sbov2 <- input$stackedBarOrderVariable2
@@ -1308,7 +1309,7 @@ shinyServer(function(input, output) {
     if (reorder) newData <- newData[sampleOrder,]
 
     list(newData,breaks1,breaks2,breaks3,breakLabels)  
-      
+
   })
   
   # stacked bar plot
