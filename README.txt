@@ -17,5 +17,4 @@ Starting microbePlot: From within R run the following commands.
 	library(shiny)
 	runApp("/path to microbePlot folder")
 
-foo
 
