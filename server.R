@@ -321,7 +321,7 @@ shinyServer(function(input, output) {
       conditionalPanel(
         condition = "input.scatterPlotOptions == true",
         sliderInput("scatterFontSize", "Font size", min=0.01, max=3.01, value=1.5),
-	      sliderInput("scatterPointSize", "Point size", min=0.01, max=3.01, value=1.0),
+	    sliderInput("scatterPointSize", "Point size", min=0.01, max=3.01, value=1.0),
         sliderInput("scatterMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
         sliderInput("scatterMarRight", "Right margin", min=0.01, max=10.01, value=2.1),
         sliderInput("scatterMarTop", "Top margin", min=0.01, max=10.01, value=4.1),
@@ -1086,17 +1086,92 @@ shinyServer(function(input, output) {
               "taxa. The taxa are ranked by the sum of abundance across samples.",sep=" ")
       ),
       sliderInput("numberHeatmapTaxa", "Number of taxa:", min=3, max=100, value=20),
-      selectInput("heatmapSideColorVariable", "Side color variable:", 
+  
+
+#     selectInput("heatmapSideColorVariable", "Side color variable:", 
+#                  choices = colnames(allData())),
+#
+#      radioButtons("heatmapColorType", "Color options:", 
+#                   list("Unique" = "unique",
+#                        "Gradient" = "gradient",
+#                        "Categories" = "category")
+#      ),
+#      conditionalPanel(
+#        condition = 'input.heatmapColorType == "category"',
+#        numericInput("nheatmapColorCat", "Number of categories:", 4)
+#      ),
+
+
+
+      selectInput("heatmapSideColorVariable1", "Side variable 1:", 
                   choices = colnames(allData())),
-      radioButtons("heatmapColorType", "Color options:", 
+      radioButtons("heatmapColorType1", "Side variable 1 options:", 
+                   list("Color Unique" = "unique",
+                        "Color Gradient" = "gradient",
+                        "Color Categories" = "category",
+                        "Plot Values" = "plotvalue" ) ),
+      conditionalPanel(
+        condition = 'input.heatmapColorType1 == "category"',
+        numericInput("nheatmapColorCat1", "Number of categories:", 4)
+      ),
+
+
+      selectInput("heatmapSideColorVariable2", "Side variable 2:", 
+                  choices = c("None",colnames(allData()))),
+      radioButtons("heatmapColorType2", "Side variable 2 options:", 
                    list("Unique" = "unique",
                         "Gradient" = "gradient",
-                        "Categories" = "category")
-      ),
+                        "Categories" = "category",
+                        "Plot Value" = "plotvalue" ) ),
       conditionalPanel(
-        condition = 'input.heatmapColorType == "category"',
-        numericInput("nheatmapColorCat", "Number of categories:", 4)
+        condition = 'input.heatmapColorType2 == "category"',
+        numericInput("nheatmapColorCat2", "Number of categories:", 4)
       ),
+
+      
+      selectInput("heatmapSideColorVariable3", "Side variable 3:", 
+                  choices = c("None",colnames(allData()))),
+      radioButtons("heatmapColorType3", "Side variable 3 options:", 
+                   list("Unique" = "unique",
+                        "Gradient" = "gradient",
+                        "Categories" = "category",
+                        "Plot Value" = "plotvalue" ) ),
+      conditionalPanel(
+        condition = 'input.heatmapColorType3 == "category"',
+        numericInput("nheatmapColorCat3", "Number of categories:", 4)
+      ),
+
+      
+      selectInput("heatmapSideColorVariable4", "Side variable 4", 
+                  choices = c("None",colnames(allData()))),
+      radioButtons("heatmapColorType4", "Side variable 4 options:", 
+                   list("Unique" = "unique",
+                        "Gradient" = "gradient",
+                        "Categories" = "category",
+                        "Plot Value" = "plotvalue" ) ),
+      conditionalPanel(
+        condition = 'input.heatmapColorType4 == "category"',
+        numericInput("nheatmapColorCat4", "Number of categories:", 4)
+      ),
+
+      selectInput("heatmapSideColorVariable5", "Side variable 5:", 
+                  choices = c("None",colnames(allData()))),
+      radioButtons("heatmapColorType5", "Side variable 5 options:", 
+                   list("Unique" = "unique",
+                        "Gradient" = "gradient",
+                        "Categories" = "category",
+                        "Plot Value" = "plotvalue" ) ),
+      conditionalPanel(
+        condition = 'input.heatmapColorType5 == "category"',
+        numericInput("nheatmapColorCat5", "Number of categories:", 4)
+      ),
+
+ 
+
+
+   
+
+
       HTML('<hr>'),
       HTML('<div align="right">'),
       downloadButton("saveHeatmap", "Save Plot"),
@@ -1118,29 +1193,110 @@ shinyServer(function(input, output) {
   })
 
   plotHeatmap<-function(){
-    colorVariable<-which(colnames(allData())==input$heatmapSideColorVariable)
-    CVlist<-getColor(allData()[,colorVariable], type=input$heatmapColorType, 
-                     numCat=input$nheatmapColorCat)
+ #   colorVariable<-which(colnames(allData())==input$heatmapSideColorVariable)
+ #   CVlist<-getColor(allData()[,colorVariable], type=input$heatmapColorType, 
+ #                    numCat=input$nheatmapColorCat)
+ #   colorV <- CVlist[[1]]
+ #   valueV <- CVlist[[2]]
+    heatmapTempData<-(microbeData()[,order(apply(microbeData(), 2, sum),
+                      decreasing=T)])[,1:input$numberHeatmapTaxa]
+    heatmapData<-t(apply(heatmapTempData, 2, as.numeric))
+    colnames(heatmapData)<-row.names(heatmapTempData)
+  
+
+    ## I'm not sure this actually does anything,
+    ## because match(tempclust...) returns c(1,2,3,4,...)
+  #  tempclust<-hclust(dist(heatmapTempData))
+  #  colorV <-colorV[match(tempclust$labels, row.names(microbeData()))]
+    ##
+    heatmap.2(heatmapData, scale="none", trace="none",
+              lmat = cbind(c(3,1),c(4,2)), lwid=c(4,1), lhei = c(1,4), 
+              Rowv=NA, dendrogram="column", #ColSideColors=colorV, 
+              cexRow=input$heatmapFontSize, 
+              cexCol=input$heatmapFontSize, margins=c(input$heatmapMarCol, input$heatmapMarRow)
+    )
+   
+  
+  }
+
+
+  plotSideChart<-function() {
+    
+
+    sideColorVariables = c(input$heatmapSideColorVariable1,
+                           input$heatmapSideColorVariable2,
+                           input$heatmapSideColorVariable3,
+                           input$heatmapSideColorVariable4,
+                           input$heatmapSideColorVariable5 )                                             
+
+    sideColorTypes = c(input$heatmapColorType1,
+                       input$heatmapColorType2,
+                       input$heatmapColorType3,
+                       input$heatmapColorType4,
+                       input$heatmapColorType5 )    
+
+    numCategories = c(input$nheatmapColorCat1,
+                      input$nheatmapColorCat2,
+                      input$nheatmapColorCat3,
+                      input$nheatmapColorCat4,
+                      input$nheatmapColorCat5 ) 
+
+    toKeep = which(sideColorVariables != "None")
+    sideColorVariables  = sideColorVariables[toKeep]
+    sideColorTypes      = sideColorTypes[toKeep]
+    numCategories       = numCategories[toKeep]
+
+# Construct heatmap in order to get the proper ordering
+    colorVariable<-which(colnames(allData())==sideColorVariables[1])
+    CVlist<-getColor(allData()[,colorVariable], type=sideColorTypes[1], 
+                     numCat=numCategories[1])
     colorV <- CVlist[[1]]
     valueV <- CVlist[[2]]
     heatmapTempData<-(microbeData()[,order(apply(microbeData(), 2, sum),
                       decreasing=T)])[,1:input$numberHeatmapTaxa]
     heatmapData<-t(apply(heatmapTempData, 2, as.numeric))
     colnames(heatmapData)<-row.names(heatmapTempData)
-  
-    ## This is a terrible way to get colorV in the right order.
-    tempclust<-hclust(dist(heatmapTempData))
-    colorV<-colorV[match(tempclust$labels, row.names(microbeData()))]
-    ##
-    
-    heatmap.2(heatmapData, scale="none", trace="none",
-              lmat = cbind(c(4,2,1),c(5,3,0)), lwid=c(4,1), lhei = c(1,4,0.5), 
+    tempHeatmap = heatmap.2(heatmapData, scale="none", trace="none",
+              lmat = cbind(c(2,4,1),c(3,5,0)), lwid=c(4,1), lhei = c(1,4,0.5), 
               Rowv=NA, dendrogram="column", ColSideColors=colorV, cexRow=input$heatmapFontSize, 
               cexCol=input$heatmapFontSize, margins=c(input$heatmapMarCol, input$heatmapMarRow)
-    )
-  
+    )    
+    
+    ordering = tempHeatmap$colInd
+
+
+
+    par(mar  = c(input$heatmapMarCol, 0,0,input$heatmapMarRow))
+    par(mar  = c(0, 0,0,0))
+    layout(cbind(c(1,2,3,4,5),c(0,0,0,0,0)), widths = c(4,1), heights = c(1,1,1,1,1))
+
+   
+
+      for(i in 1:length(sideColorVariables)) {
+        colorVariable<-which(colnames(allData())==sideColorVariables[i])
+        CVlist<-getColor(allData()[,colorVariable], type=sideColorTypes[i], 
+                         numCat=numCategories[i])
+        colorV <- CVlist[[1]]
+        valueV <- CVlist[[2]]
+
+        image(cbind(1:dim(microbeData())[1]),
+              col = colorV[ordering], axes = FALSE)
+
+      }
+    
+
+
+
+
   }
 
+
+
+
+
+  output$heatmapSideChart <- renderPlot(
+    plotSideChart()
+  )
   output$heatmapPlot <- renderPlot(
     plotHeatmap()
   )
@@ -1151,11 +1307,13 @@ shinyServer(function(input, output) {
       if (fileExtension()=="png"){
         png(filename, width=2000, height=2000, units="px", pointsize=25*input$heatmapFontSize)
         plotHeatmap()
+        plotSideChart()
         dev.off()
       }
       if (fileExtension()=="pdf"){
         pdf(filename, width=10, height=10)
         plotHeatmap()
+        plotSideChart()
         dev.off()
       }
     }
@@ -1190,7 +1348,7 @@ shinyServer(function(input, output) {
       checkboxInput("stackedBarPlotOptions", "Show plot options"),
       conditionalPanel(
         condition = "input.stackedBarPlotOptions == true",
-        checkboxInput("stackedbarLabelPlot","Label highest order factor on plot",value=TRUE),
+        checkboxInput("stackedbarLabelPlot","Label highest order factor on plot",value=FALSE),
         checkboxInput("stackedbarListOrder","List ordered factors in bottom margin",value=TRUE),
         checkboxInput("stackedbarSpaceOrder", "Draw spaces between ordered factors",value=TRUE),
         sliderInput("stackedbarFontSize", "Font size", min=0.01, max=3.01, value=1.5),
@@ -1322,7 +1480,7 @@ shinyServer(function(input, output) {
     breaks3     = stackedData()[[4]]
     breakLabels = stackedData()[[5]]
 
-    breaks = 8 * breaks1 + 2 * breaks2 + 2 * breaks3
+    breaks = 8 * breaks1 + 3 * breaks2 + 3 * breaks3
 
     layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
     par(mar=c(input$stackedbarMarBottom,input$stackedbarMarLeft,
@@ -1362,14 +1520,15 @@ shinyServer(function(input, output) {
         sampleOrderFeature<-allData()[,which(colnames(allData())==sbov)]
         breakValues = which(as.logical(breaks3))
         labelbreaks = breaks3
-    }
+    }else breakValues = c()
 
     if(input$stackedbarLabelPlot) {  #Label bar plot
         breakSums = sapply(breakValues, function(X) sum(breaks[1:X]))
         numBreaks = length(breakValues)
-        factorLabelX = rev(c(0, breakValues + breakSums))
-        text(factorLabelX,0.98,levels(sampleOrderFeature),pos=4,cex=1.4)
-
+        if(numBreaks) {
+          factorLabelX = rev(c(0, breakValues + breakSums))
+          text(factorLabelX,0.98,levels(sampleOrderFeature),pos=4,cex=1.6)
+        }
     }  
     # list orders below bar plot e.g. A | B | C
     if(input$stackedbarListOrder) mtext(breakLabels,side=1,line=5)

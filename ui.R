@@ -148,8 +148,10 @@ shinyUI(pageWithSidebar(
     tabPanel("Heatmap",
       uiOutput("heatmapVariableSelection"),
       mainPanel(
-        plotOutput("heatmapPlot", height=plotHeight)
+        plotOutput("heatmapPlot", height=plotHeight),
+        plotOutput("heatmapSideChart", height = plotHeight)
       )
+
     ),
     # stacked bar plot
     tabPanel("Stacked bar plot",
