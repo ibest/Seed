@@ -827,7 +827,7 @@ shinyServer(function(input, output) {
     sidebarPanel(
       numericInput("pcoX", "Principal coordinate X:", 1),
       numericInput("pcoY", "Principal coordinate Y:", 2), 
-      selectInput("pcoaDistMethod", "Distance method:", 
+      selectInput("distMethod", "Distance method:", 
           choices = c("euclidean", "manhattan", "canberra", "bray", "kulczynski", 
                       "jaccard","gower", "altGower", "morisita", "horn", 
                       "mountford", "raup", "binomial", "chao", "cao")),
@@ -885,7 +885,7 @@ shinyServer(function(input, output) {
 
   
   capscaleObject<-reactive({
-    capscale(microbeData()~1, distance=input$pcoaDistMethod)
+    capscale(microbeData()~1, distance=input$distMethod)
 
   })
   pcoX<-reactive({
