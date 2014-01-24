@@ -4,7 +4,7 @@
 library(shiny)
 
 plotHeight="600px"
-heatmapPlotHeight="600px"
+heatmapPlotHeight="1000px"
 
 shinyUI(pageWithSidebar(
   

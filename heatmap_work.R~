@@ -1,0 +1,26 @@
+###  Standalone Heatmap
+library("Heatplus")
+
+microbeData = read.csv("Raveletal2011microbe.csv")
+metaData = read.csv("Raveletal2011meta.csv")
+allData = cbind(metaData, microbeData)
+numberHeatmapTaxa = 20
+annoteMetaNames = names(metaData[,1:5])  
+annoteMetaIndices = which(names(metaData) %in% annoteMetaNames)
+
+
+tempMicrobeData = (microbeData[,order(apply(microbeData,2,sum),decreasing=TRUE)])
+tempMicrobeData = tempMicrobeData[,1:numberHeatmapTaxa]
+heatmapData = t(apply(tempMicrobeData,2,as.numeric))
+colnames(heatmapData) = row.names(tempMicrobeData)
+
+heatmapMeta = metaData[,annoteMetaIndices]
+
+heatmapObject = annHeatmap(heatmapData, heatmapMeta,scale="col")
+
+plot(heatmapObject)
+
+
+
+
+
