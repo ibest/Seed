@@ -4,7 +4,7 @@
 library(shiny)
 
 plotHeight="600px"
-heatmapPlotHeight="600px"
+heatmapPlotHeight="1000px"
 
 shinyUI(pageWithSidebar(
   
@@ -49,7 +49,8 @@ shinyUI(pageWithSidebar(
         HTML('<hr>'),
         helpText("Input data must be in two files. The metadata file should include sample information. 
                   The microbe file should include the abundances of the microbes in each sample. 
-                  Samples must be in rows.")
+                  Samples must be in rows."),
+	helpText("Note: Diversity indices are calculated using a relative abundance transformation of the original data.")
       ),
              
       mainPanel(

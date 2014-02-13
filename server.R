@@ -139,7 +139,7 @@ shinyServer(function(input, output) {
     microbeData
   })
 
-  microbeData <- reactive({ 
+  preMicrobeData<- reactive({
     microbeData<-inputMicrobeData()
     # if metaData is available, use only samples that overlap
     if (!is.null(input$metaFilename$datapath)){
@@ -147,6 +147,11 @@ shinyServer(function(input, output) {
       microbeData<-microbeData[na.exclude(match(row.names(inputMetaData()),
                                row.names(microbeData))),  ]
     }
+    microbeData
+  })
+
+  microbeData <- reactive({ 
+    microbeData<-preMicrobeData()
     if (input$dataTransform!="none"){
       microbeData <- decostand(microbeData, method=input$dataTransform)
     }
@@ -178,10 +183,11 @@ shinyServer(function(input, output) {
 
     metaData<-metaData[row.names(metaData)%in%row.names(inputMicrobeData()),]
 
+    raMicrobeData<-decostand(preMicrobeData(), method="total")
     metaData<-cbind(metaData,
-      Shannon.diversity=diversity(microbeData(), index="shannon"),
-      Simpson.diversity=diversity(microbeData(), index="simpson"),
-      inverse.Simpson.diversity=diversity(microbeData(), index="invsimpson")
+      Shannon.diversity=diversity(raMicrobeData, index="shannon"),
+      Simpson.diversity=diversity(raMicrobeData, index="simpson"),
+      inverse.Simpson.diversity=diversity(raMicrobeData, index="invsimpson")
     )
     metaData
   })
@@ -399,141 +405,7 @@ shinyServer(function(input, output) {
   output$scatterPlot <- renderPlot(
     plotScatter()
   )
-  
-###################################################################################################
-############################################## PCA ################################################
-###################################################################################################
-
-  # generate PCA UI
-  output$pcaVariableSelection <- renderUI({
-    sidebarPanel(
-      numericInput("pcX", "Principal component X:", 1),
-      numericInput("pcY", "Principal component Y:", 2), 
-      selectInput("pcaColorVariable", "Color variable:", choices = colnames(allData())),
-      radioButtons("pcaColorType", "Color options:", 
-                   list("Unique" = "unique",
-                        "Gradient" = "gradient",
-                        "Categories" = "category")
-      ),
-      conditionalPanel(
-        condition = 'input.pcaColorType == "category"',
-        numericInput("npcaColorCat", "Number of categories:", 4)
-      ),
-      HTML('<br><br><br>'),
-      HTML('<div align="right">'),
-      downloadButton("savePca", "Save Plot"),
-      HTML('<br><br>'),
-      downloadButton("savePcaEigen", "Save Eigenvectors"),
-      HTML('</div>'),
-      uiOutput("pcaPlotOptions")
-    )
-  })
-
-  output$pcaPlotOptions <- renderUI({
-    mainPanel(
-      checkboxInput("pcaPlotOptions", "Show plot options"),
-      conditionalPanel(
-        condition = "input.pcaPlotOptions == true",
-        sliderInput("pcaFontSize", "Font size", min=0.01, max=3.01, value=1.5),
-        sliderInput("pcaPointSize", "Point size", min=0.01, max=3.01, value=1),
-        sliderInput("pcaMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
-        sliderInput("pcaMarRight", "Right margin", min=0.01, max=10.01, value=2.1),
-        sliderInput("pcaMarTop", "Top margin", min=0.01, max=10.01, value=4.1),
-        sliderInput("pcaMarBottom", "Bottom margin", min=0.01, max=10.01, value=5.1),
-        textInput("pcaXlab", "X label", value=paste("Principal component ", 
-                  input$pcX, " (", pcaPV()[input$pcX], "%)", sep="")),
-        textInput("pcaYlab", "Y label", value=paste("Principal component ", 
-                  input$pcY, " (", pcaPV()[input$pcY], "%)", sep="")),
-        textInput("pcaTitle", "Title", value=paste("Scatter plot of principal components")),
-        textInput("pcaKeyTitle", "Legend title", value=input$pcaColorVariable),
-        sliderInput("pcaKeyFontSize", "Legend font size", min=0.01, max=3.01, value=1.5),
-        sliderInput("pcaKeyColumns", "Number of legend columns", min=1, max=15, value=3)
-        
-      )
-    )
-  })
-
-  pcaEigen<-reactive({
-    covMat<-cov(microbeData())    # covariance matrix
-    eigenMat<-as.matrix(eigen(covMat)$vectors)    # eigenvectors
-    row.names(eigenMat)<-row.names(covMat)
-    colnames(eigenMat)<-paste("ev", 1:ncol(eigenMat), sep="")
-    eigenMat
-  })
-
-  pcaObject<-reactive({
-    as.matrix(microbeData()) %*% pcaEigen()
-  })
-  pcX<-reactive({
-    pcaObject()[,input$pcX]
-  })
-  pcY<-reactive({
-    pcaObject()[,input$pcY]
-  })
-  # % variation explained
-  pcaPV<-reactive({
-    vars<-apply(pcaObject(), 2, sd)^2
-    round(vars/sum(vars)*100, digits=2)
-  })
-
-  pcaCVlist<-reactive({
-     colorVariable<-which(colnames(allData())==input$pcaColorVariable)
-     CVlist<-getColor(allData()[,colorVariable], 
-                      type=input$pcaColorType, numCat=input$npcaColorCat)
-     CVlist
-  })
-
-  # generate PCA plot
-  plotPca <- function(){
-    layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
-    par(mar=c(input$pcaMarBottom,input$pcaMarLeft,input$pcaMarTop,input$pcaMarRight))
-    
-    colorV <- pcaCVlist()[[1]]
-    valueV <- pcaCVlist()[[2]]
-    plot(pcX(), pcY(), 
-         xlab=input$pcaXlab, 
-         ylab=input$pcaYlab, 
-         main=input$pcaTitle,
-         col=colorV, pch="O",
-         cex.axis=input$pcaFontSize, cex.main=input$pcaFontSize, 
-         cex.lab=input$pcaFontSize, cex=input$pcaPointSize
-    )
-    plotLegend(colorV, valueV, gradient=(input$pcaColorType=="gradient"), 
-      title=input$pcaKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
-      max=max(as.numeric(valueV), na.rm=T), cex=input$pcaKeyFontSize, keyCol=input$pcaKeyColumns
-    )
-  }
-
-  # save PCA plot
-  output$savePca <- downloadHandler(
-    filename = function() { paste("PCAplot", fileExtension(), sep=".") },
-    content = function(filename) {
-      if (fileExtension()=="png"){
-        png(filename, width=2000, height=2000, units="px", pointsize=25*input$pcaFontSize)
-        plotPca()
-        dev.off()
-      }
-      if (fileExtension()=="pdf"){
-        pdf(filename, width=10, height=10)
-        plotPca()
-        dev.off()
-      }
-    }
-  )
-
-  output$savePcaEigen <- downloadHandler(
-    filename = function() { paste("PCAeigenvectors", "csv", sep=".") },
-    content = function(filename) {
-      write.csv(file=filename, x=pcaEigen(), quote=F)
-    }
-  )
-
-  # display PCA plot
-  output$pcaPlot <- renderPlot({
-    plotPca()
-  })
-
-    
+      
 ###################################################################################################
 ############################################# CLUSTER #############################################
 ###################################################################################################
@@ -920,7 +792,7 @@ shinyServer(function(input, output) {
          ylab=input$pcoaYlab, 
          main=input$pcoaTitle,
          col=colorV, pch="O",
-         cex.axis=input$pcoaFontSize, cex.main=input$pcaFontSize, 
+         cex.axis=input$pcoaFontSize, cex.main=input$pcoaFontSize, 
          cex.lab=input$pcoaFontSize, cex=input$pcoaPointSize
     )
     plotLegend(colorV, valueV, gradient=(input$pcoaColorType=="gradient"), 
@@ -934,7 +806,7 @@ shinyServer(function(input, output) {
     filename = function() { paste("PCoAplot", fileExtension(), sep=".") },
     content = function(filename) {
       if (fileExtension()=="png"){
-        png(filename, width=2000, height=2000, units="px", pointsize=25*input$pcaFontSize)
+        png(filename, width=2000, height=2000, units="px", pointsize=25*input$pcoaFontSize)
         plotPcoa()
         dev.off()
       }
@@ -1125,8 +997,7 @@ shinyServer(function(input, output) {
     annotationIndices = which(names(allData()) %in% input$annotationNames)
     heatmapMeta = allData()[,annotationIndices]
 
-    heatmapObject = annHeatmap(heatmapData,heatmapMeta)
-
+    heatmapObject = annHeatmap(x=heatmapData,annotation=heatmapMeta,scale="none")
     plot(heatmapObject)  
    
   }
