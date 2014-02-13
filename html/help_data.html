@@ -1,0 +1,48 @@
+<html>
+<body>
+</p>
+Seed requires input data in specific formats. The data should be in two separate files. The metaData file should include sample information. Samples should be in rows, with sample names in the first column. Additional columns may include any information about the samples. The microbeData file should include microbial abundance data. Samples should be in rows, with sample names in the first column. Additional columns should list taxa abundance. The abundance may be presence/absence, relative abundance, or count data. microbePlot assumes files are in CSV format by default. Other file types may be selected by checking the 'Show file options' box.
+</p>
+<p>
+Files that are correctly read by microbePlot will be shown in the main pannel. Only the first five lines will be displayed. When the microbeData file is loaded, microbePlot automatically calculates several diversity indices and adds them to the metaData information. These diversity calculations include Shannon, Simpson, and Inverse Simpson indices. They are calculated using the vegan R package and may not be appropriate for every type of data.
+</p>
+<p>
+Seed includes options for converting abundance data to relative abundance or to presence/absence. Relative abundance is calculated by dividing each taxa count by the sum of all taxa counts for each sample. Presence/absence converts every non-zero taxa to 1. The converted data is used for all visualizations and summaries.
+</p>
+<p>
+Seed supports saving plots in two different file formats. The user may select either PDF or PNG formats. All saved plots will be in the format selected in the 'Data' tab.
+</p>
+<p>
+List of major functions:
+</p>
+<p>
+gplots::venn - generates venn diagram
+</p>
+<p>
+vegan::decostand - tranforms data
+<p>
+</p>
+vegan::diversity - creates ecological diversity indices
+</p>
+<p>
+Citation for package vegan:
+</p>
+<blockquote>
+  Jari Oksanen, F. Guillaume Blanchet, Roeland Kindt, Pierre Legendre,
+  Peter R. Minchin, R. B. O'Hara, Gavin L. Simpson, Peter Solymos, M.
+  Henry H. Stevens and Helene Wagner (2013). vegan: Community Ecology
+  Package. R package version 2.0-10.
+  http://CRAN.R-project.org/package=vegan
+</blockquote>
+<p>
+Citation for package gplots:
+</p>
+<blockquote>
+  Gregory R. Warnes, Ben Bolker, Lodewijk Bonebakker, Robert Gentleman,
+  Wolfgang Huber Andy Liaw, Thomas Lumley, Martin Maechler, Arni
+  Magnusson, Steffen Moeller, Marc Schwartz and Bill Venables (2013).
+  gplots: Various R programming tools for plotting data. R package
+  version 2.12.1. http://CRAN.R-project.org/package=gplots
+</blockquote>
+</body>
+</html>

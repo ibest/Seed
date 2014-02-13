@@ -1,0 +1,47 @@
+<html>
+<body>
+<p>
+WGCNA is an analysis technique developed to detect genetic interactions that may be related to phenotypic characteristics.
+                   microbePlot adopts the same analysis for detecting groups of microbes that may be related to sample information. The first
+                   step in the WGCNA analysis is to determine the pairwise correlation between each taxa. The user may select from three 
+                   correlation methods. Correlations that result in NA values are set to 0. The correlations are then converted to distances by 
+                   subtracting the magnitude of the correlation from 1. The microbes are then clustered using average distances. The resulting 
+                   dendrogram is cut into groups at the 'Cut-off level'. The correlated groups of taxa may be viewed as a heatmap in the 'Heatmap'
+                   panel. The groups of taxa are next reduced to a single feature. Uncorrelated microbes are also lumped into a single group. 
+                   The Pearson correlation between these groups and the sample information is then calculated. A heatmap of these correlations may be
+                   viewed in the 'Correlations' panel. It should be noted that the validity of this analysis on ecological data has not been verified.
+</p>
+<p>
+<p>
+List of major functions:
+</p>
+<p>
+stats::hclust - generate hierarchical clustering
+</p>
+<p>
+WGCNA::cutreeStatic - cut tree at constant height
+</p>
+<p>
+WGCNA::labeledHeatmap - create labeled heatmap 
+</p>
+<p>
+WGCNA::moduleEigengenes - calculate module eigengenes (1st PCA)
+</p>
+<p>
+WGCNA::orderMEs() - order eigenvectors by similarity
+</p>
+<p>            
+Citation for package WGCNA:
+</p>
+<p>
+  Langfelder P and Horvath S, WGCNA: an R package for weighted
+  correlation network analysis. BMC Bioinformatics 2008, 9:559
+  doi:10.1186/1471-2105-9-559
+</p>
+<p>
+  Peter Langfelder, Steve Horvath (2012). Fast R Functions for Robust
+  Correlations and Hierarchical Clustering. Journal of Statistical
+  Software, 46(11), 1-17. URL http://www.jstatsoft.org/v46/i11/.
+</p>
+</body>
+</html>

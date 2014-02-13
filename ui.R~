@@ -207,7 +207,7 @@ shinyUI(pageWithSidebar(
         ),
         conditionalPanel(
           condition = "input.helpTopic == 'Heatmap'",
-          includeHTML("./html/help_heatmap.html")
+          includHTML("./html/help_heatmap.html")
         ),
         conditionalPanel(
           condition = "input.helpTopic == 'Color'",
