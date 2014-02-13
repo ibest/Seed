@@ -9,7 +9,7 @@ heatmapPlotHeight="1000px"
 shinyUI(pageWithSidebar(
   
   # Application title
-  headerPanel("microbePlot"),
+  headerPanel("Seed"),
   tabsetPanel(
     
     tabPanel("Data", 
@@ -58,7 +58,7 @@ shinyUI(pageWithSidebar(
         tableOutput("viewMicrobeData"),
         HTML("<br>"),
         helpText("This Venn diagram shows the number of samples in each file. Only the overlapping 
-                 samples are retained for use by microbePlot."),
+                 samples are retained for use by Seed."),
         plotOutput("vennPlot", height="300px")
       )
     ),
@@ -161,12 +161,12 @@ shinyUI(pageWithSidebar(
       mainPanel(
         conditionalPanel(
           condition = "input.helpTopic == 'About'",
-          helpText("microbePlot is a tool for visualizing microbial community data. It is currently being developed
-                   and may include errors in both plots and analyses. Any results provided by microbePlot should be 
+          helpText("Seed is a tool for visualizing microbial community data. It is currently being developed
+                   and may include errors in both plots and analyses. Any results provided by Seed should be 
                    used with caution."),
           helpText("Comments, suggestions, or bug reports are welcome. I can be reached by email at danlbek@gmail.com
-                   The source code and install instructions for microbePlot are available at https://github.com/danlbek/microbePlot."),
-          helpText("microbePlot is licensed under GPLv3")
+                   The source code and install instructions for Seed are available at https://github.com/danlbek/Seed."),
+          helpText("Seed is licensed under GPLv3")
         ),
         conditionalPanel(
           condition = "input.helpTopic == 'Data'",
