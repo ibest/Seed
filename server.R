@@ -7,6 +7,7 @@ library(vegan)
 library(WGCNA)
 library(gplots)
 library(Heatplus)
+library(cluster)
 
 shinyServer(function(input, output) {
 
@@ -420,7 +421,7 @@ shinyServer(function(input, output) {
       selectInput("hclustMethod", "Cluster method:", 
                   choices = c("ward", "single", "complete", "average", 
                               "mcquitty", "median", "centroid")),
-      selectInput("clusterColorVariable", "Color variable:", choices = colnames(allData())),
+      selectInput("clusterColorVariable", "Cluster color variable:", choices = colnames(allData())),
       radioButtons("clusterColorType", "Color options:", 
                    list("Unique" = "unique",
                         "Gradient" = "gradient",
@@ -503,6 +504,10 @@ shinyServer(function(input, output) {
   subtreeObject <- reactive({
     hclust(subtreeDist(), method=input$hclustMethod)
   })
+  silhouetteObject <- reactive({
+    silhouette(subtreeGroups(), clusterDist())
+  })
+  
 
   plotCompleteTree<-function(){
     colorVariable<-which(colnames(allData())==input$clusterColorVariable)
@@ -562,7 +567,12 @@ shinyServer(function(input, output) {
                keyCol=input$clusterKeyColumns
     )
   }
-
+  
+  plotSilhouette<-function(){
+    plot(silhouetteObject(), main = "Silhouette Plot", cex.names = 1.5 )
+    ## Add graphical parameter options?
+  }
+  
   output$clusterPlot <- renderPlot({
     plotCompleteTree()
   })
@@ -571,10 +581,14 @@ shinyServer(function(input, output) {
     plotSubTree()
   })
 
+  output$silhouettePlot <- renderPlot({
+    plotSilhouette() 
+  })
   output$saveCluster <- downloadHandler(
     filename = function() { 
       if (input$clusterTab=="complete"){sp<-"complete"}
       if (input$clusterTab=="subtree"){sp<-"subtree"}
+      if (input$clusterTab=="silhouette"){sp<-"silhouette"}
       paste("clusterPlot", sp, fileExtension(), sep=".") 
     },
     content = function(filename) {
@@ -582,12 +596,14 @@ shinyServer(function(input, output) {
         png(filename, width=2000, height=2000, units="px", pointsize=25*input$clusterFontSize)
         if (input$clusterTab=="complete"){plotCompleteTree()}
         if (input$clusterTab=="subtree"){plotSubTree()}
+        if (input$clusterTab=="silhouette"){plotSilhouette()}
         dev.off()
       }
       if (fileExtension()=="pdf"){
         pdf(filename, width=10, height=10)
         if (input$clusterTab=="complete"){plotCompleteTree()}
         if (input$clusterTab=="subtree"){plotSubTree()}
+        if (input$clusterTab=="silhouette"){plotSilhouette()}
         dev.off()
       }
     }

@@ -113,6 +113,9 @@ shinyUI(pageWithSidebar(
                  ),
                  tabPanel("Subtrees", value="subtree",
                           plotOutput("clusterGroupPlot", height=plotHeight)
+                 ),
+                 tabPanel("Silhouette", value="silhouette",
+                          plotOutput("silhouettePlot", height=plotHeight)
                  )
               )
              )
