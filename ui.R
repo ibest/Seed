@@ -24,7 +24,7 @@ shinyUI(pageWithSidebar(
         ),
         HTML('<hr>'),
         
-        fileInput("microbeFilename", "Select microbe file", accept=c('text/csv', 'text/comma-separated-values,text/plain')),
+        fileInput("microbeFilename", "Select taxa file", accept=c('text/csv', 'text/comma-separated-values,text/plain')),
         checkboxInput("microbeOptions", "Show file options"),
         conditionalPanel(
           condition = "input.microbeOptions == true",
@@ -48,7 +48,7 @@ shinyUI(pageWithSidebar(
         ),
         HTML('<hr>'),
         helpText("Input data must be in two files. The metadata file should include sample information. 
-                  The microbe file should include the abundances of the microbes in each sample. 
+                  The taxa file should include the abundances of the taxon in each sample. 
                   Samples must be in rows."),
 	helpText("Note: Diversity indices are calculated using a relative abundance transformation of the original data.")
       ),
@@ -82,6 +82,8 @@ shinyUI(pageWithSidebar(
       )
     ),
     
+
+
       
     # PCoA tab
     tabPanel("PCoA", 
@@ -142,6 +144,8 @@ shinyUI(pageWithSidebar(
     ),
     # heatmap
     tabPanel("Heatmap",
+
+
       uiOutput("heatmapVariableSelection"),
       mainPanel(
         plotOutput("heatmapPlot", height=heatmapPlotHeight)
@@ -158,18 +162,17 @@ shinyUI(pageWithSidebar(
     # help
     tabPanel("Help",
       sidebarPanel(
-        selectInput("helpTopic", "Help topic", choices=c("About", "Data", "Histogram", "Scatter", 
-                    "PCoA", "Bar plot", "Cluster", "WGCNA", "Heatmap", "Color"))
+        selectInput(
+              "helpTopic", 
+              "Help topic", 
+              choices=c("About", "Data", "Histogram", "Scatter", 
+                    "PCoA", "Bar plot", "Cluster", "WGCNA", "Heatmap", "Color")
+              )
       ),
       mainPanel(
         conditionalPanel(
           condition = "input.helpTopic == 'About'",
-          helpText("Seed is a tool for visualizing microbial community data. It is currently being developed
-                   and may include errors in both plots and analyses. Any results provided by Seed should be 
-                   used with caution."),
-          helpText("Comments, suggestions, or bug reports are welcome. I can be reached by email at danlbek@gmail.com
-                   The source code and install instructions for Seed are available at https://github.com/danlbek/Seed."),
-          helpText("Seed is licensed under GPLv3")
+          includeHTML("./html/help_about.html")
         ),
         conditionalPanel(
           condition = "input.helpTopic == 'Data'",
@@ -180,14 +183,11 @@ shinyUI(pageWithSidebar(
         
         conditionalPanel(
           condition = "input.helpTopic == 'Histogram'",
-          helpText("The histogram panel displays a histogram of the selected variable. Additional summary information about
-                   the variable is shown in the sidebar. The 'breaks' slider controls the aproximate number of histogram bars.")
+          helpText("./html/help_hist.html")
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'Scatter'",
-          helpText("The scatter panel displays a scatter plot of two selected variables. The X variable is displayed on the X
-                   axis and the Y variable on the Y axis. The color variable and color options control the color of the plotted 
-                   points. See the 'Color' help topic for details.")
+          includeHTML("./html/help_scatter.html")
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'PCoA'",
@@ -195,11 +195,7 @@ shinyUI(pageWithSidebar(
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'Bar plot'",
-          helpText("The bar plot panel displayes a bar plot using variables selected in the sidebar. The value variable defines 
-                   the height of the bars. The bar variable defines the bar categories. The bar variable may be reduced to categories
-                   by selecting 'Categorize bar variable'. This option breaks the bar variable into categories of equal width.
-                   The number of samples represented by each bar is shown in blue. Error bars show 95% confidence intervals, assuming
-                   that the samples are independent and normally distributed. NA values are removed from the analysis.")
+          includeHTML("./html/help_barplot.html")
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'Cluster'",
@@ -207,7 +203,7 @@ shinyUI(pageWithSidebar(
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'WGCNA'",
-          includeHTML("./html/help_wgcna.html")
+          includeHTML("./html/help_WGCNA.html")
         ),
         conditionalPanel(
           condition = "input.helpTopic == 'Heatmap'",
@@ -215,14 +211,7 @@ shinyUI(pageWithSidebar(
         ),
         conditionalPanel(
           condition = "input.helpTopic == 'Color'",
-          helpText("Many plot color points or bars based on a user selected variable. This allows the user to view the distribution of the color
-                   variable across the samples, effectively adding another dimension to the plot. There are three main options, each of which 
-                   may be appropriate in different situations. The 'Unique' option generates a different color for each different value of the variable.
-                   This option works well up to about ten values. When there are many more values the selected colors are still unique, however, they
-                   become difficult to tell apart. The 'Gradient' option may be used when the color variable is continuous. This option selects colors
-                   from a gradient. This makes it easy to distinguish between low and high valued colors. The third option is to 
-                   use color 'Categories'. This option breaks the color variable up into a user selected number of groups. These groups are then 
-                   given unique colors.")
+          includeHTML("./html/help_color.html")
         )
       )
     )

@@ -11,7 +11,8 @@ Requirements: R version 2.15 or later
 Installation: From within R run the following commands.
 	source("http://bioconductor.org/biocLite.R") 
 	biocLite("impute")
-	install.packages(c("shiny","vegan","WGCNA","qgraph","gplots","Heatplus","cluster"))
+	biocLite("Heatplus")
+	install.packages(c("shiny","vegan","WGCNA","qgraph","gplots","cluster"))
 
 Starting microbePlot: From within R run the following commands.
 	library(shiny)

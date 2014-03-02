@@ -87,31 +87,6 @@ shinyServer(function(input, output) {
     return(test[1]==test[2])
   }
 
-#  isSquare<-function(filename, sep){
-#    test<-sapply(sapply(readLines(filename,2), function(i) strsplit(i,sep)), length)
-#    browser()
-#    return(test[1]==test[2])
-
-#  }
-  
-# This isn't working for some reason
-#   # save plot function
-#   savePlot<-function(fileName="error", plotFunction, fileExt){
-#       fileName<-paste(fileName, fileExt, sep=".")
-#       if (fileExt=="png"){
-#         png(fileName, width=2000, height=2000, units="px")
-#         plotFunction()
-#         print(fileName)
-#         dev.off()
-#       }
-#       if (fileExt=="pdf"){
-#         pdf(fileName, width=10, height=10)
-#         plotFunction()
-#         print(fileName)
-#         dev.off()
-#       }
-#   }
-
 
 ###################################################################################################
 ############################################# DATA ################################################
@@ -119,7 +94,7 @@ shinyServer(function(input, output) {
   output$vennPlot <- renderPlot({          
     par(mar=c(0,0,0,0))
     vl<-list(microbeData=row.names(inputMicrobeData()), metaData=row.names(inputMetaData()))
-    names(vl)<-c("Samples in microbe file", "Samples in metadata file")
+    names(vl)<-c("Samples in taxa file", "Samples in metadata file")
     venn(vl)
   })
 
@@ -436,8 +411,8 @@ shinyServer(function(input, output) {
       numericInput("clusterGroup", "Select subtree", 1),
       
       radioButtons("clusterChoice", "Select features that define samples", 
-                   choices=c("Metadata", "Microbe data", "All data", "Custom"), 
-                   selected="Microbe data"
+                   choices=c("Metadata", "Taxa data", "All data", "Custom"), 
+                   selected="Taxa data"
       ),
       conditionalPanel(
         condition = "input.clusterChoice == 'Custom'",
@@ -472,7 +447,7 @@ shinyServer(function(input, output) {
 
   clusterData <- reactive({
     if (input$clusterChoice == "Metadata"){ data <- metaData() }
-    if (input$clusterChoice == "Microbe data"){ data <- microbeData() }
+    if (input$clusterChoice == "Taxa data"){ data <- microbeData() }
     if (input$clusterChoice == "All data"){ data <- allData()}
     if (input$clusterChoice == "Custom"){
       data <- allData()[,match(input$customClusterVariables, colnames(allData()))]
@@ -991,17 +966,17 @@ shinyServer(function(input, output) {
 #  plot options for Heatplus are more difficult
 #  so will leave them default for now
 
-#  output$heatmapPlotOptions <- renderUI({
-#    mainPanel(
-#      checkboxInput("heatmapPlotOptions", "Show plot options"),
-#      conditionalPanel(
-#        condition = "input.heatmapPlotOptions == true",
-#        sliderInput("heatmapFontSize", "Font size", min=0.01, max=3.01, value=1.5),
-#        sliderInput("heatmapMarCol", "Column margin", min=0.01, max=10.01, value=4.1),
-#        sliderInput("heatmapMarRow", "Row margin", min=0.01, max=10.01, value=1.1)
-#      )
-#    )
-#  })
+ # output$heatmapPlotOptions <- renderUI({
+ #   mainPanel(
+ #     checkboxInput("heatmapPlotOptions", "Show plot options"),
+ #     conditionalPanel(
+ #       condition = "input.heatmapPlotOptions == true",
+  #      sliderInput("heatmapFontSize", "Font size", min=0.01, max=3.01, value=1.5)
+   #     sliderInput("heatmapMarCol", "Column margin", min=0.01, max=10.01, value=4.1),
+   #     sliderInput("heatmapMarRow", "Row margin", min=0.01, max=10.01, value=1.1)
+ #     )
+  #  )
+ # })
 
   plotHeatmap<-function(){
  
@@ -1012,9 +987,13 @@ shinyServer(function(input, output) {
 
     annotationIndices = which(names(allData()) %in% input$annotationNames)
     heatmapMeta = allData()[,annotationIndices]
-
-    heatmapObject = annHeatmap(x=heatmapData,annotation=heatmapMeta,scale="none")
-    plot(heatmapObject)  
+    #browser()
+    mapcolors = colorRampPalette(c("blue","yellow"))
+    heatmapObject = annHeatmap(x=heatmapData,col = mapcolors,
+                               annotation=heatmapMeta,scale="none")
+    plot(heatmapObject)
+       #  cex.axis=input$heatmapFontSize, cex.names=input$heatmapFontSize, 
+       #  cex.lab=input$heatmapFontSize, cex.main=input$heatmapFontSize)  
    
   }
 
@@ -1067,8 +1046,8 @@ shinyServer(function(input, output) {
       checkboxInput("stackedBarPlotOptions", "Show plot options"),
       conditionalPanel(
         condition = "input.stackedBarPlotOptions == true",
-        checkboxInput("stackedbarLabelPlot","Label highest order factor on plot",value=FALSE),
-        checkboxInput("stackedbarListOrder","List ordered factors in bottom margin",value=TRUE),
+        checkboxInput("stackedbarLabelPlot","Label highest order factor on plot",value=TRUE),
+        checkboxInput("stackedbarListOrder","List ordered factors in bottom margin",value=FALSE),
         checkboxInput("stackedbarSpaceOrder", "Draw spaces between ordered factors",value=TRUE),
         sliderInput("stackedbarFontSize", "Font size", min=0.01, max=3.01, value=1.5),
         sliderInput("stackedbarMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
@@ -1099,9 +1078,7 @@ shinyServer(function(input, output) {
     if (cond1) sampleOrderFeature1 <- allData()[,which(colnames(allData())==sbov1)]
     if (cond2) sampleOrderFeature2 <- allData()[,which(colnames(allData())==sbov2)]
     if (cond3) sampleOrderFeature3 <- allData()[,which(colnames(allData())==sbov3)]
-
-    #There must be a shorter way to do this
-    # whitespace in R is very unstylish
+  
     if(cond3) { 
         if(cond2) {
             if(cond1) {
@@ -1195,12 +1172,21 @@ shinyServer(function(input, output) {
  
 
     stackedData = stackedData()[[1]]
+
+   # this will get rid of jagged top, 
+   # if relative abundance is selected
+
+   if(input$dataTransform == "total") {
+     rawSums = apply(stackedData,1,sum)
+     stackedData = stackedData / rawSums
+   }
     breaks1     = stackedData()[[2]]
     breaks2     = stackedData()[[3]]
     breaks3     = stackedData()[[4]]
     breakLabels = stackedData()[[5]]
 
-    breaks = 8 * breaks1 + 3 * breaks2 + 3 * breaks3
+    #these spacings are completely arbitrary, perhaps should be plot options
+    breaks = 8 * breaks1 + 3 * breaks2 + 3 * breaks3    
 
     layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
     par(mar=c(input$stackedbarMarBottom,input$stackedbarMarLeft,
@@ -1211,7 +1197,8 @@ shinyServer(function(input, output) {
 
  
     if(!input$stackedbarSpaceOrder) breaks = 0
-    barplot(t(stackedData), 
+    barplot(t(stackedData), #normalizedStacked 
+         ylim = c(min(stackedData), max(stackedData)*1.1),
          beside=F,
          space=c(0,breaks),
          col=colorV,
@@ -1247,7 +1234,8 @@ shinyServer(function(input, output) {
         numBreaks = length(breakValues)
         if(numBreaks) {
           factorLabelX = rev(c(0, breakValues + breakSums))
-          text(factorLabelX,0.98,levels(sampleOrderFeature),pos=4,cex=1.6)
+          text(factorLabelX,max(stackedData)*1.05,
+               levels(sampleOrderFeature),pos=4,cex=input$stackedbarFontSize)
         }
     }  
     # list orders below bar plot e.g. A | B | C

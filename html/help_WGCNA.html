@@ -2,12 +2,12 @@
 <body>
 <p>
 WGCNA is an analysis technique developed to detect genetic interactions that may be related to phenotypic characteristics.
-                   microbePlot adopts the same analysis for detecting groups of microbes that may be related to sample information. The first
+                   Seed adopts the same analysis for detecting groups of taxa that may be related to sample information. The first
                    step in the WGCNA analysis is to determine the pairwise correlation between each taxa. The user may select from three 
                    correlation methods. Correlations that result in NA values are set to 0. The correlations are then converted to distances by 
-                   subtracting the magnitude of the correlation from 1. The microbes are then clustered using average distances. The resulting 
+                   subtracting the magnitude of the correlation from 1. The taxa are then clustered using average distances. The resulting 
                    dendrogram is cut into groups at the 'Cut-off level'. The correlated groups of taxa may be viewed as a heatmap in the 'Heatmap'
-                   panel. The groups of taxa are next reduced to a single feature. Uncorrelated microbes are also lumped into a single group. 
+                   panel. The groups of taxa are next reduced to a single feature. Uncorrelated taxa are also lumped into a single group. 
                    The Pearson correlation between these groups and the sample information is then calculated. A heatmap of these correlations may be
                    viewed in the 'Correlations' panel. It should be noted that the validity of this analysis on ecological data has not been verified.
 </p>
@@ -28,7 +28,7 @@ WGCNA::labeledHeatmap - create labeled heatmap
 WGCNA::moduleEigengenes - calculate module eigengenes (1st PCA)
 </p>
 <p>
-WGCNA::orderMEs() - order eigenvectors by similarity
+WGCNA::orderMEs - order eigenvectors by similarity
 </p>
 <p>            
 Citation for package WGCNA:
