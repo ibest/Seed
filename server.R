@@ -480,7 +480,9 @@ shinyServer(function(input, output) {
     hclust(subtreeDist(), method=input$hclustMethod)
   })
   silhouetteObject <- reactive({
-    silhouette(subtreeGroups(), clusterDist())
+    foo = silhouette(subtreeGroups(), clusterDist(), cex.names = input$clusterFontSize)
+    browser()
+    foo
   })
   
 
@@ -544,8 +546,14 @@ shinyServer(function(input, output) {
   }
   
   plotSilhouette<-function(){
-    plot(silhouetteObject(), main = "Silhouette Plot", cex.names = 1.5 )
-    ## Add graphical parameter options?
+    plot(silhouetteObject(), main = input$clusterTitle, 
+         col = "blue",
+         cex.axis = input$clusterFontSize, 
+         cex.main = input$clusterFontSize, 
+         cex.lab = input$clusterFontSize,
+         cex.sub = input$clusterFontSize,
+         cex.names = input$clusterFontSize)  # why doesn't this do anything???
+
   }
   
   output$clusterPlot <- renderPlot({
@@ -963,20 +971,19 @@ shinyServer(function(input, output) {
   })
 
 
-#  plot options for Heatplus are more difficult
-#  so will leave them default for now
-
- # output$heatmapPlotOptions <- renderUI({
- #   mainPanel(
- #     checkboxInput("heatmapPlotOptions", "Show plot options"),
- #     conditionalPanel(
- #       condition = "input.heatmapPlotOptions == true",
-  #      sliderInput("heatmapFontSize", "Font size", min=0.01, max=3.01, value=1.5)
-   #     sliderInput("heatmapMarCol", "Column margin", min=0.01, max=10.01, value=4.1),
-   #     sliderInput("heatmapMarRow", "Row margin", min=0.01, max=10.01, value=1.1)
- #     )
-  #  )
- # })
+  output$heatmapPlotOptions <- renderUI({
+    mainPanel(
+      checkboxInput("heatmapPlotOptions", "Show plot options"),
+      conditionalPanel(
+        condition = "input.heatmapPlotOptions == true",
+        sliderInput("heatmapFontSize", "Font size", min=0.01, max=3.01, value=1.5),
+        sliderInput("heatmapWidth", "Heatmap Width", min=0.01, max=2, value=1)
+        #note:  there is no height option because they are relative
+        # setting par(mar) has no effect unfortunately so there is no control over margins
+        
+      )
+    )
+  })
 
   plotHeatmap<-function(){
  
@@ -988,12 +995,13 @@ shinyServer(function(input, output) {
     annotationIndices = which(names(allData()) %in% input$annotationNames)
     heatmapMeta = allData()[,annotationIndices]
     #browser()
-    mapcolors = colorRampPalette(c("blue","yellow"))
+    #not sure why this goes gret-yellow but looks fine anyway
+    mapcolors = colorRampPalette(c("blue","yellow")) 
     heatmapObject = annHeatmap(x=heatmapData,col = mapcolors,
                                annotation=heatmapMeta,scale="none")
+    heatmapObject$layout$width = heatmapObject$layout$width * input$heatmapWidth
+    heatmapObject$labels$Row$cex = input$heatmapFontSize
     plot(heatmapObject)
-       #  cex.axis=input$heatmapFontSize, cex.names=input$heatmapFontSize, 
-       #  cex.lab=input$heatmapFontSize, cex.main=input$heatmapFontSize)  
    
   }
 
