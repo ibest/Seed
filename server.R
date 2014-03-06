@@ -481,7 +481,7 @@ shinyServer(function(input, output) {
   })
   silhouetteObject <- reactive({
     foo = silhouette(subtreeGroups(), clusterDist(), cex.names = input$clusterFontSize)
-    browser()
+  #  browser()
     foo
   })
   
@@ -548,12 +548,13 @@ shinyServer(function(input, output) {
   plotSilhouette<-function(){
     plot(silhouetteObject(), main = input$clusterTitle, 
          col = "blue",
+         mar = c(input$clusterMarBottom, input$clusterMarLeft,
+                 input$clusterMarTop, input$clusterMarRight),  # how to set margins?
          cex.axis = input$clusterFontSize, 
          cex.main = input$clusterFontSize, 
          cex.lab = input$clusterFontSize,
          cex.sub = input$clusterFontSize,
-         cex.names = input$clusterFontSize)  # why doesn't this do anything???
-
+         cex.names = input$clusterFontSize)  # how to change the cluster label font size?
   }
   
   output$clusterPlot <- renderPlot({
