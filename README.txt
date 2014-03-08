@@ -1,4 +1,4 @@
-Seed - An R/Shiny package for visualizing taxonomical community data.
+Seed - An R/Shiny package for visualizing taxonomic community data.
 
 Created by:  Daniel Beck
 Contact: danlbek@gmail.com
