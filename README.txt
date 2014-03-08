@@ -16,7 +16,7 @@ Installation: From within R run the following commands.
 	biocLite("Heatplus")
 	install.packages(c("shiny","vegan","WGCNA","gplots","cluster"))
 
-Starting microbePlot: From within R run the following commands.
+Starting Seed: From within R run the following commands.
 	library(shiny)
 	runApp("/path to Seed folder")
 
