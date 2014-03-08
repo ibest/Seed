@@ -1,8 +1,10 @@
-microbePlot - An R/Shiny package for visualizing microbial community data.
+Seed - An R/Shiny package for visualizing taxonomical community data.
 
-Maintainer: Daniel Beck
-
+Created by:  Daniel Beck
 Contact: danlbek@gmail.com
+
+Maintainer: Christopher Dennis
+Contact: christozoan@gmail.com
 
 License: GPLv3
 
@@ -12,10 +14,10 @@ Installation: From within R run the following commands.
 	source("http://bioconductor.org/biocLite.R") 
 	biocLite("impute")
 	biocLite("Heatplus")
-	install.packages(c("shiny","vegan","WGCNA","qgraph","gplots","cluster"))
+	install.packages(c("shiny","vegan","WGCNA","gplots","cluster"))
 
 Starting microbePlot: From within R run the following commands.
 	library(shiny)
-	runApp("/path to microbePlot folder")
+	runApp("/path to Seed folder")
 
 
