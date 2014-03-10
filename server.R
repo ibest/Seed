@@ -8,6 +8,10 @@ library(WGCNA)
 library(gplots)
 library(Heatplus)
 library(cluster)
+library(ggplot2) # needed for shinyApps
+
+microbeDemo <- read.csv("./Raveletal2011microbe.csv")
+metaDemo <- read.csv("./Raveletal2011meta.csv")
 
 shinyServer(function(input, output) {
 
@@ -101,16 +105,20 @@ shinyServer(function(input, output) {
   # microbeData will contain relative abundances
   inputMicrobeData<-reactive({
     microbeFile <- input$microbeFilename$datapath
-    if (is.null(microbeFile)) return(NULL)
-    microbeData <- read.csv(microbeFile, header=input$microbeHeader, 
-                            sep=input$microbeSep, quote=input$microbeQuote) 
-    if (isSquare(microbeFile, input$microbeSep)){
-      # This is a strange way to do this, but it fixes single column file quirks
-      rn<-microbeData[,1]
-      cn<-colnames(microbeData)
-      microbeData<-as.data.frame(microbeData[,-1])
-      row.names(microbeData)<-rn
-      colnames(microbeData)<-cn[-1]
+    if (is.null(microbeFile) && !input$loadDemo) return(NULL)
+    if(input$loadDemo) {
+        microbeData <- microbeDemo
+    } else {
+        microbeData <- read.csv(microbeFile, header=input$microbeHeader, 
+                                sep=input$microbeSep, quote=input$microbeQuote) 
+        if (isSquare(microbeFile, input$microbeSep)){
+        # This is a strange way to do this, but it fixes single column file quirks
+          rn<-microbeData[,1]
+          cn<-colnames(microbeData)
+          microbeData<-as.data.frame(microbeData[,-1])
+          row.names(microbeData)<-rn
+          colnames(microbeData)<-cn[-1]
+        }
     }
     microbeData
   })
@@ -139,16 +147,22 @@ shinyServer(function(input, output) {
   # When reading in metadata, also calculate diversity metrics from microbeData and add to metaData
   inputMetaData<-reactive({
     metaFile <- input$metaFilename$datapath
-    if (is.null(metaFile)) return(NULL)
-    metaData <- read.csv(metaFile, header=input$metaHeader, 
-                         sep=input$metaSep, quote=input$metaQuote)
-    if (isSquare(metaFile, input$metaSep)){
-      # elaborate to prevent single column file errors
-      rn<-metaData[,1]
-      cn<-colnames(metaData)
-      metaData<-as.data.frame(metaData[,-1])
-      row.names(metaData)<-rn
-      colnames(metaData)<-cn[-1]
+    if (is.null(metaFile) && !input$loadDemo) return(NULL)
+    if(input$loadDemo) {
+      metaData <- metaDemo
+
+    } else {
+      metaData <- read.csv(metaFile, header=input$metaHeader, 
+                           sep=input$metaSep, quote=input$metaQuote)
+    
+        if (isSquare(metaFile, input$metaSep)){
+        # elaborate to prevent single column file errors
+          rn<-metaData[,1]
+          cn<-colnames(metaData)
+          metaData<-as.data.frame(metaData[,-1])
+          row.names(metaData)<-rn
+          colnames(metaData)<-cn[-1]
+        }
     }
     metaData
   })

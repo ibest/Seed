@@ -10,10 +10,10 @@ shinyUI(pageWithSidebar(
   
   # Application title
   headerPanel("Seed"),
-  tabsetPanel(
-    
+  tabsetPanel(  
     tabPanel("Data", 
       sidebarPanel(
+        checkboxInput("loadDemo", "Load Demo Dataset", value=FALSE),
         fileInput("metaFilename", "Select metadata file", accept=c('text/csv', 'text/comma-separated-values,text/plain')),
         checkboxInput("metaOptions", "Show file options"),
         conditionalPanel(
