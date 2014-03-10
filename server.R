@@ -145,12 +145,17 @@ shinyServer(function(input, output) {
   
   # metaData will contain all sample information other than microbial abundances
   # When reading in metadata, also calculate diversity metrics from microbeData and add to metaData
+  
+  # logic gets convoluted when loading demo dataset;
+  # should redo data input structure to allow for more flexibility
+  # (this will help with implementation of data preprocssing options as well)
+  
   inputMetaData<-reactive({
     metaFile <- input$metaFilename$datapath
+
     if (is.null(metaFile) && !input$loadDemo) return(NULL)
     if(input$loadDemo) {
       metaData <- metaDemo
-
     } else {
       metaData <- read.csv(metaFile, header=input$metaHeader, 
                            sep=input$metaSep, quote=input$metaQuote)
@@ -169,7 +174,7 @@ shinyServer(function(input, output) {
 
   metaData <- reactive({ 
     metaData<-inputMetaData()
-    if (is.null(input$microbeFilename$datapath)) return(metaData)
+    if (is.null(input$microbeFilename$datapath) && !input$loadDemo) return(metaData)
 
     metaData<-metaData[row.names(metaData)%in%row.names(inputMicrobeData()),]
 
@@ -184,7 +189,7 @@ shinyServer(function(input, output) {
   
   # include all data combined in order to produce comprehensive lists of features
   allData <- reactive({ 
-    if (is.null(input$microbeFilename$datapath)||is.null(input$metaFilename$datapath)) return(NULL)
+    if ((is.null(input$microbeFilename$datapath)||is.null(input$metaFilename$datapath)) && !input$loadDemo) return(NULL)
     cbind(metaData(), microbeData()) 
   })
 

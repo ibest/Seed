@@ -48,7 +48,7 @@ shinyUI(pageWithSidebar(
         ),
         HTML('<hr>'),
         helpText("Input data must be in two files. The metadata file should include sample information. 
-                  The taxa file should include the abundances of the taxon in each sample. 
+                  The taxa file should include the abundances of the taxa in each sample. 
                   Samples must be in rows."),
 	helpText("Note: Diversity indices are calculated using a relative abundance transformation of the original data.")
       ),
@@ -67,7 +67,6 @@ shinyUI(pageWithSidebar(
     tabPanel("Histogram", 
 
       uiOutput("histVariableSelection"),
-  
       mainPanel(    
         plotOutput("histPlot", height=plotHeight)
       )
