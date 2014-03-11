@@ -42,6 +42,13 @@ shinyUI(pageWithSidebar(
                      )
         ),
         
+        numericInput("cutoffPercent", "Combine taxa representing lowest X% of total counts:",
+                     value = 0, min = 0, max = 100, step = 0.01),
+        helpText("Combined taxa will be labelled 'other_combined'"),
+        numericInput("subsetPercent", "Randomly sample Y% of uploaded data:",
+                     value = 100, min = 0, max = 100, step = 0.1),
+        numericInput("subsetSeed", "Pseuorandom number seed:",
+                     value = 1212121, step = 1),             
         radioButtons("saveType", "Save plots as:", 
                      list("PDF" = "pdf",
                           "PNG" = "png")
@@ -59,7 +66,11 @@ shinyUI(pageWithSidebar(
         HTML("<br>"),
         helpText("This Venn diagram shows the number of samples in each file. Only the overlapping 
                  samples are retained for use by Seed."),
-        plotOutput("vennPlot", height="300px")
+        plotOutput("vennPlot", height="300px"),
+        textOutput("dimRawMeta"),
+        textOutput("dimRawMicrobe"),
+        textOutput("dimPostMeta"),
+        textOutput("dimPostMicrobe")
       )
     ),
     

@@ -8,7 +8,7 @@ library(WGCNA)
 library(gplots)
 library(Heatplus)
 library(cluster)
-library(ggplot2) # needed for shinyApps
+#library(ggplot2) # needed for shinyApps
 
 microbeDemo <- read.csv("./Raveletal2011microbe.csv")
 metaDemo <- read.csv("./Raveletal2011meta.csv")
@@ -90,6 +90,31 @@ shinyServer(function(input, output) {
     test<-sapply(sapply(headLines, function(i) strsplit(i,sep)), length)
     return(test[1]==test[2])
   }
+  
+  # takes taxa file and combines lowest cutoff% of counts to single variable
+combinePercent = function(DAT, cutoff, percent = TRUE) {
+  
+  if(percent) cutoff = cutoff/100
+  
+  csums = apply(DAT, 2, sum)
+  ascendingOrder = order(csums)
+  csums = csums[ascendingOrder]
+  DAT = DAT[,ascendingOrder]  
+  relativeCumSum = cumsum(csums) / sum(csums)
+  
+  toCombine = DAT[,relativeCumSum <= cutoff]
+  toKeep = DAT[,relativeCumSum > cutoff]
+  
+  combined_other = apply(toCombine,1,sum)
+  if(sum(combined_other) > 0) {
+    newDAT = cbind(toKeep, combined_other)
+  } else {
+    newDAT = toKeep
+  }
+
+  return(newDAT) 
+}
+
 
 
 ###################################################################################################
@@ -100,6 +125,14 @@ shinyServer(function(input, output) {
     vl<-list(microbeData=row.names(inputMicrobeData()), metaData=row.names(inputMetaData()))
     names(vl)<-c("Samples in taxa file", "Samples in metadata file")
     venn(vl)
+  })
+
+
+  sampleSet = reactive({
+    if(is.null(preMicrobeData())) return(NULL)
+    set.seed(input$subsetSeed)
+    N = nrow(preMicrobeData())
+    return(sample(1:N, input$subsetPercent * N / 100))
   })
 
   # microbeData will contain relative abundances
@@ -138,6 +171,11 @@ shinyServer(function(input, output) {
     microbeData<-preMicrobeData()
     if (input$dataTransform!="none"){
       microbeData <- decostand(microbeData, method=input$dataTransform)
+    }
+
+    if(!is.null(microbeData)) {
+        microbeData = combinePercent(microbeData, input$cutoffPercent)
+        microbeData = microbeData[sampleSet(),]
     }
 
     microbeData
@@ -184,7 +222,8 @@ shinyServer(function(input, output) {
       Simpson.diversity=diversity(raMicrobeData, index="simpson"),
       inverse.Simpson.diversity=diversity(raMicrobeData, index="invsimpson")
     )
-    metaData
+
+    metaData[sampleSet(),]
   })
   
   # include all data combined in order to produce comprehensive lists of features
@@ -206,6 +245,23 @@ shinyServer(function(input, output) {
   # display top five lines of microbeData file
   output$viewMicrobeData <- renderTable({
     head(microbeData(), n=5)
+  })
+  
+  output$dimRawMeta = renderText({
+    paste("Dimensions of raw metadata:", nrow(inputMetaData()), 
+          "x", ncol(inputMetaData()) ) 
+  })
+  output$dimRawMicrobe = renderText({
+    paste("Dimensions of raw taxa data:", nrow(inputMicrobeData()), 
+          "x", ncol(inputMicrobeData()) ) 
+  })
+  output$dimPostMeta = renderText({
+    paste("Dimensions of preprocessed metadata:", nrow(metaData()), 
+          "x", ncol(metaData())  )
+  })
+  output$dimPostMicrobe = renderText({
+    paste("Dimensions of preprocessed taxa data:", nrow(microbeData()), 
+          "x", ncol(microbeData())  )
   })
 
 ###################################################################################################
