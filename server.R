@@ -91,31 +91,32 @@ shinyServer(function(input, output) {
     return(test[1]==test[2])
   }
   
-  # takes taxa file and combines lowest cutoff% of counts to single variable
-combinePercent = function(DAT, cutoff, percent = TRUE) {
+  # combines all taxa with total relative abundance (across all samples)
+  # less than the cutoff
+  combinePercent = function(DAT, cutoff, percent = TRUE) {
   
-  if(percent) cutoff = cutoff/100
+    if(percent) cutoff = cutoff/100
   
-  csums = apply(DAT, 2, sum)
-  ascendingOrder = order(csums)
-  csums = csums[ascendingOrder]
-  DAT = DAT[,ascendingOrder]  
-  relativeCumSum = cumsum(csums) / sum(csums)
-  
-  toCombine = DAT[,relativeCumSum <= cutoff]
-  toKeep = DAT[,relativeCumSum > cutoff]
-  
-  combined_other = apply(toCombine,1,sum)
-  if(sum(combined_other) > 0) {
-    newDAT = cbind(toKeep, combined_other)
-  } else {
-    newDAT = toKeep
+    colsums = apply(DAT, 2, sum)
+    relcolsums = colsums / sum(colsums)
+    other_combined = apply(DAT[,relcolsums < cutoff],1,sum)
+    if(sum(other_combined) > 0) return(cbind(DAT[,relcolsums >= cutoff], other_combined))
+    return(DAT[,relcolsums >= cutoff])
   }
-
-  return(newDAT) 
-}
-
-
+  
+  
+  allDataColNames = reactive({
+    if(is.null(allData())) return(c("None"))
+    return(colnames(allData()))
+  })
+  metaDataColNames = reactive({
+    if(is.null(allData())) return(c("None"))
+    return(colnames(metaData()))
+  })
+  microbeDataColNames = reactive({
+    if(is.null(allData())) return(c("None"))
+    return(colnames(microbeData()))
+  })
 
 ###################################################################################################
 ############################################# DATA ################################################
@@ -125,14 +126,6 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
     vl<-list(microbeData=row.names(inputMicrobeData()), metaData=row.names(inputMetaData()))
     names(vl)<-c("Samples in taxa file", "Samples in metadata file")
     venn(vl)
-  })
-
-
-  sampleSet = reactive({
-    if(is.null(preMicrobeData())) return(NULL)
-    set.seed(input$subsetSeed)
-    N = nrow(preMicrobeData())
-    return(sample(1:N, input$subsetPercent * N / 100))
   })
 
   # microbeData will contain relative abundances
@@ -175,7 +168,6 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
 
     if(!is.null(microbeData)) {
         microbeData = combinePercent(microbeData, input$cutoffPercent)
-        microbeData = microbeData[sampleSet(),]
     }
 
     microbeData
@@ -183,10 +175,6 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
   
   # metaData will contain all sample information other than microbial abundances
   # When reading in metadata, also calculate diversity metrics from microbeData and add to metaData
-  
-  # logic gets convoluted when loading demo dataset;
-  # should redo data input structure to allow for more flexibility
-  # (this will help with implementation of data preprocssing options as well)
   
   inputMetaData<-reactive({
     metaFile <- input$metaFilename$datapath
@@ -223,7 +211,7 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
       inverse.Simpson.diversity=diversity(raMicrobeData, index="invsimpson")
     )
 
-    metaData[sampleSet(),]
+    metaData
   })
   
   # include all data combined in order to produce comprehensive lists of features
@@ -247,21 +235,23 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
     head(microbeData(), n=5)
   })
   
+  # this is tedious but textOutput doesn't process escape characters
+  # so the four objects are for formatting purposes
   output$dimRawMeta = renderText({
-    paste("Dimensions of raw metadata:", nrow(inputMetaData()), 
-          "x", ncol(inputMetaData()) ) 
+    paste("Dimension of raw metadata:", 
+          paste(nrow(inputMetaData()), ncol(inputMetaData()), sep = " x ") )
   })
   output$dimRawMicrobe = renderText({
-    paste("Dimensions of raw taxa data:", nrow(inputMicrobeData()), 
-          "x", ncol(inputMicrobeData()) ) 
+    paste("Dimension of raw taxa data:", 
+          paste(nrow(inputMicrobeData()), ncol(inputMicrobeData()), sep = " x "))
   })
   output$dimPostMeta = renderText({
-    paste("Dimensions of preprocessed metadata:", nrow(metaData()), 
-          "x", ncol(metaData())  )
+    paste("Dimension of preprocessed metadata:", 
+          paste(nrow(metaData()), ncol(metaData()), sep = " x "))
   })
   output$dimPostMicrobe = renderText({
-    paste("Dimensions of preprocessed taxa data:", nrow(microbeData()), 
-          "x", ncol(microbeData())  )
+    paste("Dimension of preprocessed taxa data:", 
+          paste(nrow(microbeData()), ncol(microbeData()), sep = " x ")) 
   })
 
 ###################################################################################################
@@ -272,18 +262,20 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
   output$histVariableSelection <- renderUI({  
     # generate sidebar
     sidebarPanel(
-      selectInput("variable", "Variable:", choices = colnames(allData())),
-      sliderInput("breaks", "Breaks:", min=2, max=20, value=10),
-      HTML('<br><br>'),
-      HTML('<div align="center">'),
-      tableOutput("varSum"),
-      HTML('<div align="right">'),
-      downloadButton("saveHist", "Save Plot"),
-      HTML('</div>'),
-      HTML('<br><hr><div align="left">'),
-      uiOutput("histPlotOptions")
+        selectInput("variable", "Variable:", choices = allDataColNames()),
+        sliderInput("breaks", "Breaks:", min=2, max=20, value=10),
+        HTML('<br><br>'),
+        HTML('<div align="center">'),
+        tableOutput("varSum"),
+        HTML('<div align="right">'),
+        downloadButton("saveHist", "Save Plot"),
+        HTML('</div>'),
+        HTML('<br><hr><div align="left">'),
+        uiOutput("histPlotOptions")
     )
   })
+  
+  
   
   output$histPlotOptions <- renderUI({
     mainPanel(
@@ -304,6 +296,7 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
 
   # generate summary of histogram variable for display in sidebar
   output$varSum <- renderTable({
+    if(is.null(allData())) return(NULL)
     s<-as.matrix(summary(allData()[,which(colnames(allData())==input$variable)]))
     colnames(s)<-input$variables
   })
@@ -311,6 +304,7 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
   # histogram plot
   plotHistogram <- function(){
     if (is.null(input$breaks)) return(NULL)
+    if(is.null(allData())) return(NULL)
     par(mar=c(input$histMarBottom,input$histMarLeft,input$histMarTop,input$histMarRight))
     hist(as.numeric(allData()[,which(colnames(allData())==input$variable)]), 
          breaks=input$breaks, 
@@ -353,9 +347,9 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
   output$scatterVariableSelection <- renderUI({
     # generate sidebar
     sidebarPanel(
-      selectInput("variable1", "X:", choices = colnames(allData())),
-      selectInput("variable2", "Y:", choices = colnames(allData())),
-      selectInput("scatterColorVariable", "Color variable:", choices = colnames(allData())),
+      selectInput("variable1", "X:", choices = allDataColNames()),
+      selectInput("variable2", "Y:", choices = allDataColNames()),
+      selectInput("scatterColorVariable", "Color variable:", choices = allDataColNames()),
       radioButtons("scatterColorType", "Color options:", 
                   list("Unique" = "unique",
                        "Gradient" = "gradient",
@@ -398,6 +392,7 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
   })
 
   scatterCVlist<-reactive({
+      if(is.null(allData())) return(NULL)
       colorVariable<-which(colnames(allData())==input$scatterColorVariable)
       CVlist <- getColor(allData()[,colorVariable], type=input$scatterColorType, 
                          numCat=input$nscatterColorCat)
@@ -405,34 +400,39 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
   })
 
   scatterX<-reactive({
+      if(is.null(allData())) return(NULL)
       as.numeric(allData()[,which(colnames(allData())==input$variable1)])
   })
 
   scatterY<-reactive({
+      if(is.null(allData())) return(NULL)
       as.numeric(allData()[,which(colnames(allData())==input$variable2)])
   })
 
   # generate scatter plot
   plotScatter<-function(){
-    layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
-    par(mar=c(input$scatterMarBottom,input$scatterMarLeft,
-              input$scatterMarTop,input$scatterMarRight))
-    colorV <- scatterCVlist()[[1]]
-    valueV <- scatterCVlist()[[2]]
-    plot(scatterX(), 
-         scatterY(), 
-         xlab=input$scatterXlab, 
-         ylab=input$scatterYlab, 
-         main=input$scatterTitle,
-         col=colorV, pch="O",
-         cex.axis=input$scatterFontSize, cex.main=input$scatterFontSize, 
-         cex.lab=input$scatterFontSize, cex=input$scatterPointSize
-    )
-    plotLegend(colorV, valueV, gradient=(input$scatterColorType=="gradient"), 
-               title=input$scatterKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
-               max=max(as.numeric(valueV), na.rm=T), cex=input$scatterKeyFontSize,
-               keyCol=input$scatterKeyColumns
-    )
+    try({
+      if(is.null(allData())) return(NULL)
+      layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
+      par(mar=c(input$scatterMarBottom,input$scatterMarLeft,
+                input$scatterMarTop,input$scatterMarRight))
+      colorV <- scatterCVlist()[[1]]
+      valueV <- scatterCVlist()[[2]]
+      plot(scatterX(), 
+           scatterY(), 
+           xlab=input$scatterXlab, 
+           ylab=input$scatterYlab, 
+           main=input$scatterTitle,
+           col=colorV, pch="O",
+           cex.axis=input$scatterFontSize, cex.main=input$scatterFontSize, 
+           cex.lab=input$scatterFontSize, cex=input$scatterPointSize
+      )
+      plotLegend(colorV, valueV, gradient=(input$scatterColorType=="gradient"), 
+                 title=input$scatterKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
+                 max=max(as.numeric(valueV), na.rm=T), cex=input$scatterKeyFontSize,
+                 keyCol=input$scatterKeyColumns
+      )
+      })
   }
   
   # save scatter plot
@@ -471,7 +471,7 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
       selectInput("hclustMethod", "Cluster method:", 
                   choices = c("ward", "single", "complete", "average", 
                               "mcquitty", "median", "centroid")),
-      selectInput("clusterColorVariable", "Cluster color variable:", choices = colnames(allData())),
+      selectInput("clusterColorVariable", "Cluster color variable:", choices = allDataColNames()),
       radioButtons("clusterColorType", "Color options:", 
                    list("Unique" = "unique",
                         "Gradient" = "gradient",
@@ -491,7 +491,7 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
       ),
       conditionalPanel(
         condition = "input.clusterChoice == 'Custom'",
-        checkboxGroupInput(inputId="customClusterVariables", label="", choices=colnames(allData()))
+        checkboxGroupInput(inputId="customClusterVariables", label="", choices=allDataColNames())
       ),
       HTML('<br><br><br>'),
       HTML('<div align="right">'),
@@ -521,6 +521,7 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
   })
 
   clusterData <- reactive({
+    if(is.null(allData())) return(NULL)
     if (input$clusterChoice == "Metadata"){ data <- metaData() }
     if (input$clusterChoice == "Taxa data"){ data <- microbeData() }
     if (input$clusterChoice == "All data"){ data <- allData()}
@@ -562,6 +563,8 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
   
 
   plotCompleteTree<-function(){
+   try({
+    if(is.null(allData())) return(NULL)
     colorVariable<-which(colnames(allData())==input$clusterColorVariable)
     CVlist<-getColor(allData()[,colorVariable], type=input$clusterColorType, 
                      numCat=input$nclusterColorCat)
@@ -591,9 +594,12 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
                max=max(as.numeric(valueV), na.rm=T), cex=input$clusterKeyFontSize, 
                keyCol=input$clusterKeyColumns
     )
+   })
   }
 
   plotSubTree<-function(){
+   try({
+    if(is.null(allData())) return(NULL)
     colorVariable<-which(colnames(allData())==input$clusterColorVariable)
     CVlist<-getColor(allData()[subtreeGroups()==input$clusterGroup,colorVariable], 
                      type=input$clusterColorType, numCat=input$nclusterColorCat)
@@ -618,18 +624,22 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
                max=max(as.numeric(valueV), na.rm=T),cex=input$clusterKeyFontSize, 
                keyCol=input$clusterKeyColumns
     )
+   })
   }
   
   plotSilhouette<-function(){
+   try({
+    if(is.null(allData())) return(NULL)
     plot(silhouetteObject(), main = input$clusterTitle, 
          col = "blue",
          mar = c(input$clusterMarBottom, input$clusterMarLeft,
-                 input$clusterMarTop, input$clusterMarRight),  # how to set margins?
+                 input$clusterMarTop, input$clusterMarRight),  
          cex.axis = input$clusterFontSize, 
          cex.main = input$clusterFontSize, 
          cex.lab = input$clusterFontSize,
          cex.sub = input$clusterFontSize,
          cex.names = input$clusterFontSize)  # how to change the cluster label font size?
+   })
   }
   
   output$clusterPlot <- renderPlot({
@@ -676,8 +686,8 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
   # dynamic bar plot UI
   output$barVariableSelection <- renderUI({
     sidebarPanel(
-      selectInput("barVariable", "Value variable:", choices = colnames(allData())),
-      selectInput("categoryVariable", "Bar variable:", choices = colnames(allData())),
+      selectInput("barVariable", "Value variable:", choices = allDataColNames()),
+      selectInput("categoryVariable", "Bar variable:", choices = allDataColNames()),
       checkboxInput("barCat", "Categorize bar variable", FALSE),
       conditionalPanel(
         condition = "input.barCat == true",
@@ -712,6 +722,8 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
   })
 
   plotBar <- function(){
+   try({
+    if(is.null(allData())) return(NULL)
     barVarCol<-which(colnames(allData())==input$barVariable)
     catVarCol<-which(colnames(allData())==input$categoryVariable)
     groupedValues<-split(allData()[,barVarCol],allData()[,catVarCol])
@@ -742,6 +754,7 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
     arrows(x,means+errors,x,means-errors,code=0)
     text(x,min(means-errors)+(max(means+errors)-min(means-errors))/20, 
          ns, col="blue", cex=input$barFontSize       )
+   })
   }
 
   output$saveBar <- downloadHandler(
@@ -779,7 +792,7 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
           choices = c("euclidean", "manhattan", "canberra", "bray", "kulczynski", 
                       "jaccard","gower", "altGower", "morisita", "horn", 
                       "mountford", "raup", "binomial", "chao", "cao")),
-      selectInput("pcoaColorVariable", "Color variable:", choices = colnames(allData())),
+      selectInput("pcoaColorVariable", "Color variable:", choices = allDataColNames()),
       radioButtons("pcoaColorType", "Color options:", 
                    list("Unique" = "unique",
                         "Gradient" = "gradient",
@@ -844,6 +857,7 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
   })
   # % variation explained
   pcoaPV<-reactive({
+    if(is.null(allData())) return(NULL)
     vars<-apply(pcoaObject(), 2, sd)^2
     round(vars/sum(vars)*100, digits=2)
   })
@@ -857,6 +871,8 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
 
   # generate PCoA plot
   plotPcoa <- function(){
+   try({
+    if(is.null(allData())) return(NULL)
     layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
     par(mar=c(input$pcoaMarBottom,input$pcoaMarLeft,input$pcoaMarTop,input$pcoaMarRight))
     
@@ -874,6 +890,7 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
       title=input$pcoaKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
       max=max(as.numeric(valueV), na.rm=T), cex=input$pcoaKeyFontSize, keyCol=input$pcoaKeyColumns
     )
+   })
   }
 
   # save PCoA plot
@@ -939,6 +956,8 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
   hdADJ <- reactive({ hclust(dADJ(), method="average") })
   
   plotDendrogram <- function(){
+   try({
+    if(is.null(allData())) return(NULL)
     groups<-cutreeStatic(dendro=hdADJ(), minSize=3,cutHeight=input$cutLevel)
     moduleColors<-getColor(groups, "unique")[[1]]
     plotDendroAndColors(hdADJ(), 
@@ -949,12 +968,15 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
                         cex.colorLabels=fontSize(), cex.dendroLabels=fontSize(),
                         cex.rowText=fontSize(), cex.axis=fontSize(), cex.lab=fontSize()
     )
+   })
   }
   output$dendroPlot <- renderPlot({
     plotDendrogram()
   })
   
   plotHtmp <- function(){
+   try({
+    if(is.null(allData())) return(NULL)
     groups<-cutreeStatic(dendro=hdADJ(), minSize=3,cutHeight=input$cutLevel)
     corlist<-sapply(unique(groups), function(i) cors()[groups==i, groups==i])
     cc<-colorRampPalette(c("white", "blue"))
@@ -965,6 +987,7 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
               cexRow=fontSize(), 
               cexCol=fontSize(),
               col=cc)
+   })
   }
 
   output$htmpPlot <- renderPlot({
@@ -972,6 +995,8 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
   })
   
   plotCor <- function(){
+   try({
+    if(is.null(allData())) return(NULL)
     groups<-cutreeStatic(dendro=hdADJ(), minSize=3,cutHeight=input$cutLevel)
     MEs0 = moduleEigengenes(microbeData(), groups+1)$eigengenes
     MEs = orderMEs(MEs0)
@@ -991,7 +1016,8 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
                    setStdMargins = FALSE,
                    zlim = c(-1,1),
                    main = "", 
-                   cex.lab.x=fontSize())    
+                   cex.lab.x=fontSize()) 
+   })   
   }
 
   output$corPlot <- renderPlot({
@@ -1036,7 +1062,7 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
       sliderInput("numberHeatmapTaxa", "Number of taxa:", min=3, max=100, value=20),
       
       helpText("\nSelect metadata for column annotation:"),
-      checkboxGroupInput(inputId="annotationNames", label="", choices=colnames(metaData())),
+      checkboxGroupInput(inputId="annotationNames", label="", choices=allDataColNames()),
 
       HTML('<hr>'),
       HTML('<div align="right">'),
@@ -1062,6 +1088,8 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
   })
 
   plotHeatmap<-function(){
+   try({
+    if(is.null(allData())) return(NULL)
  
     tempMicrobeData = (microbeData()[,order(apply(microbeData(),2,sum),decreasing=TRUE)])
     tempMicrobeData = tempMicrobeData[,1:input$numberHeatmapTaxa]
@@ -1078,7 +1106,7 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
     heatmapObject$layout$width = heatmapObject$layout$width * input$heatmapWidth
     heatmapObject$labels$Row$cex = input$heatmapFontSize
     plot(heatmapObject)
-   
+   })
   }
 
   output$heatmapPlot <- renderPlot(
@@ -1112,11 +1140,11 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
       sliderInput("numBars", "Number of taxa:", min=2, max=15, value=5),
       HTML('<br>'),
       selectInput("stackedBarOrderVariable1", "Order samples by:", 
-                    choices = c("None", colnames(allData()))          ),
+                    choices = c("None", allDataColNames())          ),
       selectInput("stackedBarOrderVariable2", "Secondary ordering:", 
-                    choices = c("None", colnames(allData()))          ),
+                    choices = c("None", allDataColNames())          ),
       selectInput("stackedBarOrderVariable3", "Tertiary ordering:", 
-                    choices = c("None", colnames(allData()))          ),
+                    choices = c("None", allDataColNames())          ),
       HTML('<br><br>'),
       HTML('<div align="right">'),
       downloadButton("saveStackedbar", "Save Plot"),
@@ -1253,17 +1281,17 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
   
   # stacked bar plot
   plotStackedbar <- function(){
- 
-
+   try({
+    if(is.null(allData())) return(NULL)
     stackedData = stackedData()[[1]]
 
-   # this will get rid of jagged top, 
-   # if relative abundance is selected
+    # this will get rid of jagged top, 
+    # if relative abundance is selected
 
-   if(input$dataTransform == "total") {
-     rawSums = apply(stackedData,1,sum)
-     stackedData = stackedData / rawSums
-   }
+    if(input$dataTransform == "total") {
+      rawSums = apply(stackedData,1,sum)
+      stackedData = stackedData / rawSums
+    }
     breaks1     = stackedData()[[2]]
     breaks2     = stackedData()[[3]]
     breaks3     = stackedData()[[4]]
@@ -1326,7 +1354,7 @@ combinePercent = function(DAT, cutoff, percent = TRUE) {
     if(input$stackedbarListOrder) mtext(breakLabels,side=1,line=5)
     plotLegend(colorV, valueV, gradient=F, cex=input$stackedbarKeyFontSize, 
                keyCol=input$stackedbarKeyColumns)
-    
+   })
 
   }
   

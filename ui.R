@@ -42,13 +42,9 @@ shinyUI(pageWithSidebar(
                      )
         ),
         
-        numericInput("cutoffPercent", "Combine taxa representing lowest X% of total counts:",
-                     value = 0, min = 0, max = 100, step = 0.01),
-        helpText("Combined taxa will be labelled 'other_combined'"),
-        numericInput("subsetPercent", "Randomly sample Y% of uploaded data:",
-                     value = 100, min = 0, max = 100, step = 0.1),
-        numericInput("subsetSeed", "Pseuorandom number seed:",
-                     value = 1212121, step = 1),             
+        numericInput("cutoffPercent", "Combine taxa each representing less than X% of total counts:",
+                     value = 0, min = 0, max = 100, step = 0.00001),
+        helpText("Combined taxa will be labelled 'other_combined'"),            
         radioButtons("saveType", "Save plots as:", 
                      list("PDF" = "pdf",
                           "PNG" = "png")
@@ -76,8 +72,8 @@ shinyUI(pageWithSidebar(
     
     # Histogram tab
     tabPanel("Histogram", 
-
       uiOutput("histVariableSelection"),
+      
       mainPanel(    
         plotOutput("histPlot", height=plotHeight)
       )
@@ -186,11 +182,8 @@ shinyUI(pageWithSidebar(
         ),
         conditionalPanel(
           condition = "input.helpTopic == 'Data'",
-
           includeHTML("./html/help_data.html")
-        
         ),
-        
         conditionalPanel(
           condition = "input.helpTopic == 'Histogram'",
           helpText("./html/help_hist.html")
