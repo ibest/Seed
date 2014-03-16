@@ -13,7 +13,7 @@ library(cluster)
 microbeDemo <- read.csv("./Raveletal2011microbe.csv")
 metaDemo <- read.csv("./Raveletal2011meta.csv")
 
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
 
 
 ##################################################################################################*
@@ -85,16 +85,19 @@ shinyServer(function(input, output) {
 
   # tests to see if file is square (if it has column names for every column)
   isSquare<-function(filename, sep){
-    headLines = readLines(filename,2)
-    headLines[2] = paste(headLines[2], "arbitrary_string", sep="")
-    test<-sapply(sapply(headLines, function(i) strsplit(i,sep)), length)
-    return(test[1]==test[2])
+
+     setProgress(message = "Loading data . . . ", value = 1)
+     headLines = readLines(filename,2)
+     headLines[2] = paste(headLines[2], "arbitrary_string", sep="")
+     test<-sapply(sapply(headLines, function(i) strsplit(i,sep)), length)
+     return(test[1]==test[2])
+
   }
   
   # combines all taxa with total relative abundance (across all samples)
   # less than the cutoff
   combinePercent = function(DAT, cutoff, percent = TRUE) {
-  
+    if(cutoff == 0) return(DAT)
     if(percent) cutoff = cutoff/100
   
     colsums = apply(DAT, 2, sum)
@@ -105,23 +108,18 @@ shinyServer(function(input, output) {
   }
   
   
-  allDataColNames = reactive({
+  getFeatures = reactive({
     if(is.null(allData())) return(c("None"))
-    return(colnames(allData()))
-  })
-  metaDataColNames = reactive({
-    if(is.null(allData())) return(c("None"))
-    return(colnames(metaData()))
-  })
-  microbeDataColNames = reactive({
-    if(is.null(allData())) return(c("None"))
-    return(colnames(microbeData()))
+    if(input$dataNamesLimit && ncol(microbeData()) > 50) {
+      return(c(names(metaData()), names(microbeData()[,1:50]))) 
+    }
+    return(names(allData))
   })
 
 ###################################################################################################
 ############################################# DATA ################################################
 ###################################################################################################
-  output$vennPlot <- renderPlot({          
+  output$vennPlot <- renderPlot({    
     par(mar=c(0,0,0,0))
     vl<-list(microbeData=row.names(inputMicrobeData()), metaData=row.names(inputMetaData()))
     names(vl)<-c("Samples in taxa file", "Samples in metadata file")
@@ -130,6 +128,9 @@ shinyServer(function(input, output) {
 
   # microbeData will contain relative abundances
   inputMicrobeData<-reactive({
+  withProgress(session,min=0,max=1, 
+   expr = {
+    setProgress(message = "Loading data . . . ", value = 1)
     microbeFile <- input$microbeFilename$datapath
     if (is.null(microbeFile) && !input$loadDemo) return(NULL)
     if(input$loadDemo) {
@@ -147,9 +148,13 @@ shinyServer(function(input, output) {
         }
     }
     microbeData
+   })
   })
 
   preMicrobeData<- reactive({
+  withProgress(session,min=0,max=1, 
+   expr = {
+    setProgress(message = "Loading data . . . ", value = 1)
     microbeData<-inputMicrobeData()
     # if metaData is available, use only samples that overlap
     if (!is.null(input$metaFilename$datapath)){
@@ -158,6 +163,7 @@ shinyServer(function(input, output) {
                                row.names(microbeData))),  ]
     }
     microbeData
+   })
   })
 
   microbeData <- reactive({ 
@@ -169,14 +175,21 @@ shinyServer(function(input, output) {
     if(!is.null(microbeData)) {
         microbeData = combinePercent(microbeData, input$cutoffPercent)
     }
-
-    microbeData
+    cnames = colnames(microbeData)
+    rnames = rownames(microbeData)
+    microbeData = sapply(microbeData, as.numeric)
+    microbeData = data.frame(microbeData)
+ #   rownames(microbeData) = rnames
+ #   colnames(microbeData) = cnames
   })
   
   # metaData will contain all sample information other than microbial abundances
   # When reading in metadata, also calculate diversity metrics from microbeData and add to metaData
   
   inputMetaData<-reactive({
+   withProgress(session,min=0,max=1, 
+   expr = {
+    setProgress(message = "Calculating diversity indices . . . ", value = 1)
     metaFile <- input$metaFilename$datapath
 
     if (is.null(metaFile) && !input$loadDemo) return(NULL)
@@ -196,9 +209,14 @@ shinyServer(function(input, output) {
         }
     }
     metaData
+   })
   })
 
   metaData <- reactive({ 
+  withProgress(session,min=0,max=1, 
+   expr = {
+    setProgress(message = "Calculating diversity indices . . . ", value = 1)
+   
     metaData<-inputMetaData()
     if (is.null(input$microbeFilename$datapath) && !input$loadDemo) return(metaData)
 
@@ -212,11 +230,13 @@ shinyServer(function(input, output) {
     )
 
     metaData
+   })
   })
   
   # include all data combined in order to produce comprehensive lists of features
   allData <- reactive({ 
-    if ((is.null(input$microbeFilename$datapath)||is.null(input$metaFilename$datapath)) && !input$loadDemo) return(NULL)
+    if ((is.null(input$microbeFilename$datapath)||
+         is.null(input$metaFilename$datapath)) && !input$loadDemo) return(NULL)
     cbind(metaData(), microbeData()) 
   })
 
@@ -227,12 +247,16 @@ shinyServer(function(input, output) {
   
   # display top five lines of metaData file
   output$viewMetaData <- renderTable({
-    head(metaData(), n=5)
+    if(is.null(metaData())) return(NULL)
+    if(ncol(metaData()) < 20) return(head(metaData(), n=5))
+    head(metaData(), n=5)[,1:20]
   })
   
   # display top five lines of microbeData file
   output$viewMicrobeData <- renderTable({
-    head(microbeData(), n=5)
+    if(is.null(microbeData())) return(NULL)
+    if(ncol(microbeData()) < 20) return(head(microbeData(),n=5))
+    head(microbeData(), n=5)[,1:20]
   })
   
   # this is tedious but textOutput doesn't process escape characters
@@ -262,7 +286,7 @@ shinyServer(function(input, output) {
   output$histVariableSelection <- renderUI({  
     # generate sidebar
     sidebarPanel(
-        selectInput("variable", "Variable:", choices = allDataColNames()),
+        selectInput("variable", "Variable:", choices = getFeatures()),
         sliderInput("breaks", "Breaks:", min=2, max=20, value=10),
         HTML('<br><br>'),
         HTML('<div align="center">'),
@@ -334,9 +358,9 @@ shinyServer(function(input, output) {
 
 
   # display histogram of the requested variable
-  output$histPlot <- renderPlot(
+  output$histPlot <- renderPlot({
     plotHistogram()
-  )
+  })
 
   
 ###################################################################################################
@@ -347,9 +371,9 @@ shinyServer(function(input, output) {
   output$scatterVariableSelection <- renderUI({
     # generate sidebar
     sidebarPanel(
-      selectInput("variable1", "X:", choices = allDataColNames()),
-      selectInput("variable2", "Y:", choices = allDataColNames()),
-      selectInput("scatterColorVariable", "Color variable:", choices = allDataColNames()),
+      selectInput("variable1", "X:", choices = getFeatures()),
+      selectInput("variable2", "Y:", choices = getFeatures()),
+      selectInput("scatterColorVariable", "Color variable:", choices = getFeatures()),
       radioButtons("scatterColorType", "Color options:", 
                   list("Unique" = "unique",
                        "Gradient" = "gradient",
@@ -373,7 +397,7 @@ shinyServer(function(input, output) {
       conditionalPanel(
         condition = "input.scatterPlotOptions == true",
         sliderInput("scatterFontSize", "Font size", min=0.01, max=3.01, value=1.5),
-	    sliderInput("scatterPointSize", "Point size", min=0.01, max=3.01, value=1.0),
+	      sliderInput("scatterPointSize", "Point size", min=0.01, max=3.01, value=1.0),
         sliderInput("scatterMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
         sliderInput("scatterMarRight", "Right margin", min=0.01, max=10.01, value=2.1),
         sliderInput("scatterMarTop", "Top margin", min=0.01, max=10.01, value=4.1),
@@ -386,7 +410,6 @@ shinyServer(function(input, output) {
         textInput("scatterKeyTitle", "Legend title", value=input$scatterColorVariable),
         sliderInput("scatterKeyFontSize", "Legend font size", min=0.01, max=3.01, value=1.5),
         sliderInput("scatterKeyColumns", "Number of legend columns", min=1, max=15, value=3)
-
       )
     )
   })
@@ -471,7 +494,7 @@ shinyServer(function(input, output) {
       selectInput("hclustMethod", "Cluster method:", 
                   choices = c("ward", "single", "complete", "average", 
                               "mcquitty", "median", "centroid")),
-      selectInput("clusterColorVariable", "Cluster color variable:", choices = allDataColNames()),
+      selectInput("clusterColorVariable", "Cluster color variable:", choices = getFeatures()),
       radioButtons("clusterColorType", "Color options:", 
                    list("Unique" = "unique",
                         "Gradient" = "gradient",
@@ -485,13 +508,10 @@ shinyServer(function(input, output) {
       sliderInput("clusterCutHeight", "Subtree cut height:", min=0.0, max=1.0, value=0.5),
       numericInput("clusterGroup", "Select subtree", 1),
       
-      radioButtons("clusterChoice", "Select features that define samples", 
-                   choices=c("Metadata", "Taxa data", "All data", "Custom"), 
-                   selected="Taxa data"
-      ),
+#      actionButton("generateCluster", "Generate Plot"),
       conditionalPanel(
         condition = "input.clusterChoice == 'Custom'",
-        checkboxGroupInput(inputId="customClusterVariables", label="", choices=allDataColNames())
+        checkboxGroupInput(inputId="customClusterVariables", label="", choices=getFeatures())
       ),
       HTML('<br><br><br>'),
       HTML('<div align="right">'),
@@ -519,140 +539,137 @@ shinyServer(function(input, output) {
       )
     )
   })
-
-  clusterData <- reactive({
-    if(is.null(allData())) return(NULL)
-    if (input$clusterChoice == "Metadata"){ data <- metaData() }
-    if (input$clusterChoice == "Taxa data"){ data <- microbeData() }
-    if (input$clusterChoice == "All data"){ data <- allData()}
-    if (input$clusterChoice == "Custom"){
-      data <- allData()[,match(input$customClusterVariables, colnames(allData()))]
-    }
-    # non-numeric values cause cluster plot to fail. This converts them to numbers
-    # apply statements fail for unknown reasons
-    for (column in 1:ncol(data)){
-      data[,column]<-as.numeric(data[,column])
-    }
-
-    data
-  })
   
   clusterDist <- reactive({
-    vegdist(clusterData(), method=input$distMethod, na.rm=T)
+      vegdist(microbeData(), method=input$distMethod, na.rm=T)
   })
   clusterObject <- reactive({
-    hclust(clusterDist(), method=input$hclustMethod)
+      hclust(clusterDist(), method=input$hclustMethod)
   })
   subtreeGroups <- reactive({
-    cutree(clusterObject(), h=input$clusterCutHeight*max(clusterObject()$height))
+     cutree(clusterObject(), h=input$clusterCutHeight*max(clusterObject()$height))
   })
   subtreeData <- reactive({
-    clusterData()[subtreeGroups()==input$clusterGroup,]
+     clusterData()[subtreeGroups()==input$clusterGroup,]
   })
   subtreeDist <- reactive({
-    vegdist(subtreeData(), method=input$distMethod, na.rm=T)
+     vegdist(subtreeData(), method=input$distMethod, na.rm=T)
   })
   subtreeObject <- reactive({
     hclust(subtreeDist(), method=input$hclustMethod)
   })
   silhouetteObject <- reactive({
-    foo = silhouette(subtreeGroups(), clusterDist(), cex.names = input$clusterFontSize)
-  #  browser()
-    foo
+     silhouette(subtreeGroups(), clusterDist(), cex.names = input$clusterFontSize)
   })
   
 
   plotCompleteTree<-function(){
-   try({
-    if(is.null(allData())) return(NULL)
-    colorVariable<-which(colnames(allData())==input$clusterColorVariable)
-    CVlist<-getColor(allData()[,colorVariable], type=input$clusterColorType, 
-                     numCat=input$nclusterColorCat)
-    colorV <- CVlist[[1]]
-    valueV <- CVlist[[2]]
-    layout(matrix(c(1,2,3,1,2,3),ncol=2), height = c(4,1,1),width = c(4,4))
-    par(mar=c(input$clusterMarBottom,input$clusterMarLeft,
-              input$clusterMarTop,input$clusterMarRight))
-    plotDendroAndColors(clusterObject(), 
-                        colors = data.frame(colorV), 
-                        dendroLabels = NULL, 
-                        abHeight = input$clusterCutHeight*max(clusterObject()$height), 
-                        groupLabels = "",
-                        main = input$clusterTitle,
-                        ylab = input$clusterYlab,
-                        setLayout = FALSE, 
-                        mar = c(input$clusterMarBottom, input$clusterMarLeft,
-                                input$clusterMarTop, input$clusterMarRight),
-                        cex.colorLabels = input$clusterFontSize, 
-                        cex.dendroLabels = input$clusterFontSize,
-                        cex.rowText = input$clusterFontSize, 
-                        cex.axis  = input$clusterFontSize, 
-                        cex.lab = input$clusterFontSize, cex.main = input$clusterFontSize
-    )
-    plotLegend(colorV, valueV, gradient=(input$clusterColorType=="gradient"), 
-               title=input$clusterKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
-               max=max(as.numeric(valueV), na.rm=T), cex=input$clusterKeyFontSize, 
-               keyCol=input$clusterKeyColumns
-    )
-   })
+   withProgress(session,min=0,max=1, 
+     expr = {
+      setProgress(message = "Generating plot . . . ", value = 1)
+        try({
+          if(is.null(allData())) return(NULL)
+          colorVariable<-which(colnames(allData())==input$clusterColorVariable)
+          CVlist<-getColor(allData()[,colorVariable], type=input$clusterColorType, 
+                       numCat=input$nclusterColorCat)
+          colorV <- CVlist[[1]]
+          valueV <- CVlist[[2]]
+          layout(matrix(c(1,2,3,1,2,3),ncol=2), height = c(4,1,1),width = c(4,4))
+          par(mar=c(input$clusterMarBottom,input$clusterMarLeft,
+                    input$clusterMarTop,input$clusterMarRight))
+          plotDendroAndColors(clusterObject(), 
+                             colors = data.frame(colorV), 
+                             dendroLabels = NULL, 
+                             abHeight = input$clusterCutHeight*max(clusterObject()$height), 
+                             groupLabels = "",
+                             main = input$clusterTitle,
+                             ylab = input$clusterYlab,
+                             setLayout = FALSE, 
+                             mar = c(input$clusterMarBottom, input$clusterMarLeft,
+                                     input$clusterMarTop, input$clusterMarRight),
+                             cex.colorLabels = input$clusterFontSize, 
+                             cex.dendroLabels = input$clusterFontSize,
+                             cex.rowText = input$clusterFontSize, 
+                             cex.axis  = input$clusterFontSize, 
+                             cex.lab = input$clusterFontSize, cex.main = input$clusterFontSize
+         )
+         plotLegend(colorV, valueV, gradient=(input$clusterColorType=="gradient"), 
+                    title=input$clusterKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
+                    max=max(as.numeric(valueV), na.rm=T), cex=input$clusterKeyFontSize, 
+                    keyCol=input$clusterKeyColumns
+         )
+       })
+    })
   }
 
   plotSubTree<-function(){
-   try({
-    if(is.null(allData())) return(NULL)
-    colorVariable<-which(colnames(allData())==input$clusterColorVariable)
-    CVlist<-getColor(allData()[subtreeGroups()==input$clusterGroup,colorVariable], 
-                     type=input$clusterColorType, numCat=input$nclusterColorCat)
-    colorV <- CVlist[[1]]
-    valueV <- CVlist[[2]]
-    layout(matrix(c(1,2,3,1,2,3),ncol=2), height = c(4,1,1),width = c(4,4))
-    plotDendroAndColors(subtreeObject(), 
-                        colors = data.frame(colorV), 
-                        dendroLabels = NULL, 
-                        groupLabels = "",
-                        main = input$clusterTitle,
-                        setLayout = FALSE,
-                        mar = c(input$clusterMarBottom, input$clusterMarLeft,
-                                input$clusterMarTop, input$clusterMarRight),
-                        cex.colorLabels = input$clusterFontSize, 
-                        cex.dendroLabels = input$clusterFontSize,
-                        cex.rowText=input$clusterFontSize, cex.axis=input$clusterFontSize, 
-                        cex.lab=input$clusterFontSize, cex.main=input$clusterFontSize
-    )  
-    plotLegend(colorV, valueV, gradient=(input$clusterColorType=="gradient"), 
-               title=input$clusterKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
-               max=max(as.numeric(valueV), na.rm=T),cex=input$clusterKeyFontSize, 
-               keyCol=input$clusterKeyColumns
-    )
-   })
+   withProgress(session,min=0,max=1, 
+     expr = {
+      setProgress(message = "Generating plot . . . ", value = 1)
+      try({
+      if(is.null(allData())) return(NULL)
+      colorVariable<-which(colnames(allData())==input$clusterColorVariable)
+      CVlist<-getColor(allData()[subtreeGroups()==input$clusterGroup,colorVariable], 
+                       type=input$clusterColorType, numCat=input$nclusterColorCat)
+      colorV <- CVlist[[1]]
+      valueV <- CVlist[[2]]
+      layout(matrix(c(1,2,3,1,2,3),ncol=2), height = c(4,1,1),width = c(4,4))
+      plotDendroAndColors(subtreeObject(), 
+                          colors = data.frame(colorV), 
+                          dendroLabels = NULL, 
+                          groupLabels = "",
+                          main = input$clusterTitle,
+                          setLayout = FALSE,
+                          mar = c(input$clusterMarBottom, input$clusterMarLeft,
+                                  input$clusterMarTop, input$clusterMarRight),
+                          cex.colorLabels = input$clusterFontSize, 
+                          cex.dendroLabels = input$clusterFontSize,
+                          cex.rowText=input$clusterFontSize, cex.axis=input$clusterFontSize, 
+                          cex.lab=input$clusterFontSize, cex.main=input$clusterFontSize
+      )  
+      plotLegend(colorV, valueV, gradient=(input$clusterColorType=="gradient"), 
+                 title=input$clusterKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
+                 max=max(as.numeric(valueV), na.rm=T),cex=input$clusterKeyFontSize, 
+                 keyCol=input$clusterKeyColumns
+      )
+     })
+    })
   }
   
   plotSilhouette<-function(){
-   try({
-    if(is.null(allData())) return(NULL)
-    plot(silhouetteObject(), main = input$clusterTitle, 
-         col = "blue",
-         mar = c(input$clusterMarBottom, input$clusterMarLeft,
-                 input$clusterMarTop, input$clusterMarRight),  
-         cex.axis = input$clusterFontSize, 
-         cex.main = input$clusterFontSize, 
-         cex.lab = input$clusterFontSize,
-         cex.sub = input$clusterFontSize,
-         cex.names = input$clusterFontSize)  # how to change the cluster label font size?
-   })
+   withProgress(session,min=0,max=1, 
+     expr = {
+      setProgress(message = "Generating Plot . . . ", value = 1) 
+       try({
+        if(is.null(allData())) return(NULL)
+        plot(silhouetteObject(), main = input$clusterTitle, 
+             col = "blue",
+             mar = c(input$clusterMarBottom, input$clusterMarLeft,
+                     input$clusterMarTop, input$clusterMarRight),  
+             cex.axis = input$clusterFontSize, 
+             cex.main = input$clusterFontSize, 
+             cex.lab = input$clusterFontSize,
+             cex.sub = input$clusterFontSize,
+             cex.names = input$clusterFontSize)  # how to change the cluster label font size?
+      })
+    })
   }
-  
+   
   output$clusterPlot <- renderPlot({
-    plotCompleteTree()
+ #   if(is.null(input$generateCluster)) return(NULL)
+ #   if(input$generateCluster == 0) return(NULL)
+ #   isolate(plotCompleteTree())
+     plotCompleteTree()
   })
-
+  
   output$clusterGroupPlot <- renderPlot({
     plotSubTree()
   })
 
   output$silhouettePlot <- renderPlot({
-    plotSilhouette() 
+    plotSilhouette()
   })
+  
   output$saveCluster <- downloadHandler(
     filename = function() { 
       if (input$clusterTab=="complete"){sp<-"complete"}
@@ -686,8 +703,8 @@ shinyServer(function(input, output) {
   # dynamic bar plot UI
   output$barVariableSelection <- renderUI({
     sidebarPanel(
-      selectInput("barVariable", "Value variable:", choices = allDataColNames()),
-      selectInput("categoryVariable", "Bar variable:", choices = allDataColNames()),
+      selectInput("barVariable", "Value variable:", choices = getFeatures()),
+      selectInput("categoryVariable", "Bar variable:", choices = getFeatures()),
       checkboxInput("barCat", "Categorize bar variable", FALSE),
       conditionalPanel(
         condition = "input.barCat == true",
@@ -792,7 +809,7 @@ shinyServer(function(input, output) {
           choices = c("euclidean", "manhattan", "canberra", "bray", "kulczynski", 
                       "jaccard","gower", "altGower", "morisita", "horn", 
                       "mountford", "raup", "binomial", "chao", "cao")),
-      selectInput("pcoaColorVariable", "Color variable:", choices = allDataColNames()),
+      selectInput("pcoaColorVariable", "Color variable:", choices = getFeatures()),
       radioButtons("pcoaColorType", "Color options:", 
                    list("Unique" = "unique",
                         "Gradient" = "gradient",
@@ -872,24 +889,28 @@ shinyServer(function(input, output) {
   # generate PCoA plot
   plotPcoa <- function(){
    try({
-    if(is.null(allData())) return(NULL)
-    layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
-    par(mar=c(input$pcoaMarBottom,input$pcoaMarLeft,input$pcoaMarTop,input$pcoaMarRight))
-    
-    colorV <- pcoaCVlist()[[1]]
-    valueV <- pcoaCVlist()[[2]]
-    plot(pcoX(), pcoY(), 
-         xlab=input$pcoaXlab, 
-         ylab=input$pcoaYlab, 
-         main=input$pcoaTitle,
-         col=colorV, pch="O",
-         cex.axis=input$pcoaFontSize, cex.main=input$pcoaFontSize, 
-         cex.lab=input$pcoaFontSize, cex=input$pcoaPointSize
-    )
-    plotLegend(colorV, valueV, gradient=(input$pcoaColorType=="gradient"), 
-      title=input$pcoaKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
-      max=max(as.numeric(valueV), na.rm=T), cex=input$pcoaKeyFontSize, keyCol=input$pcoaKeyColumns
-    )
+    withProgress(session,min=0,max=1, 
+     expr = {
+      setProgress(message = "Generating plot . . . ", value = 1)
+      if(is.null(allData())) return(NULL)
+     layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
+      par(mar=c(input$pcoaMarBottom,input$pcoaMarLeft,input$pcoaMarTop,input$pcoaMarRight))
+      
+      colorV <- pcoaCVlist()[[1]]
+      valueV <- pcoaCVlist()[[2]]
+      plot(pcoX(), pcoY(), 
+           xlab=input$pcoaXlab, 
+           ylab=input$pcoaYlab, 
+           main=input$pcoaTitle,
+           col=colorV, pch="O",
+           cex.axis=input$pcoaFontSize, cex.main=input$pcoaFontSize, 
+           cex.lab=input$pcoaFontSize, cex=input$pcoaPointSize
+      )
+      plotLegend(colorV, valueV, gradient=(input$pcoaColorType=="gradient"), 
+        title=input$pcoaKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
+        max=max(as.numeric(valueV), na.rm=T), cex=input$pcoaKeyFontSize, keyCol=input$pcoaKeyColumns
+      )
+    })
    })
   }
 
@@ -1062,7 +1083,7 @@ shinyServer(function(input, output) {
       sliderInput("numberHeatmapTaxa", "Number of taxa:", min=3, max=100, value=20),
       
       helpText("\nSelect metadata for column annotation:"),
-      checkboxGroupInput(inputId="annotationNames", label="", choices=allDataColNames()),
+      checkboxGroupInput(inputId="annotationNames", label="", choices=getFeatures()),
 
       HTML('<hr>'),
       HTML('<div align="right">'),
@@ -1101,9 +1122,13 @@ shinyServer(function(input, output) {
     #browser()
     #not sure why this goes gret-yellow but looks fine anyway
     mapcolors = colorRampPalette(c("blue","yellow")) 
-    heatmapObject = annHeatmap(x=heatmapData,col = mapcolors,
-                               annotation=heatmapMeta,scale="none")
-    heatmapObject$layout$width = heatmapObject$layout$width * input$heatmapWidth
+    heatmapObject = annHeatmap(x=heatmapData,annotation=heatmapMeta,scale="none",
+                               col=colorRampPalette(c("blue","red"), space="rgb")(50), 
+                               breaks=50, labels=list(cex=input$heatmapFontSize))
+
+ #  heatmapObject = annHeatmap(x=heatmapData,col = mapcolors,
+ #                              annotation=heatmapMeta,scale="none")
+ #   heatmapObject$layout$width = heatmapObject$layout$width * input$heatmapWidth
     heatmapObject$labels$Row$cex = input$heatmapFontSize
     plot(heatmapObject)
    })
@@ -1140,11 +1165,11 @@ shinyServer(function(input, output) {
       sliderInput("numBars", "Number of taxa:", min=2, max=15, value=5),
       HTML('<br>'),
       selectInput("stackedBarOrderVariable1", "Order samples by:", 
-                    choices = c("None", allDataColNames())          ),
+                    choices = c("None", getFeatures())          ),
       selectInput("stackedBarOrderVariable2", "Secondary ordering:", 
-                    choices = c("None", allDataColNames())          ),
+                    choices = c("None", getFeatures())          ),
       selectInput("stackedBarOrderVariable3", "Tertiary ordering:", 
-                    choices = c("None", allDataColNames())          ),
+                    choices = c("None", getFeatures())          ),
       HTML('<br><br>'),
       HTML('<div align="right">'),
       downloadButton("saveStackedbar", "Save Plot"),
@@ -1307,13 +1332,15 @@ shinyServer(function(input, output) {
     colorV<-colorV[as.numeric(unlist(strsplit(input$stackedbarColorOrder,split=",")))]
     valueV<-colnames(stackedData)
 
- 
     if(!input$stackedbarSpaceOrder) breaks = 0
+
+    barLabels = rep("",nrow(microbeData()))
     barplot(t(stackedData), #normalizedStacked 
          ylim = c(min(stackedData), max(stackedData)*1.1),
          beside=F,
          space=c(0,breaks),
          col=colorV,
+         names.arg = barLabels,
          ylab=input$stackedbarYlab,
          main=input$stackedbarTitle,
          border=NA, cex.axis=input$stackedbarFontSize, cex.names=input$stackedbarFontSize, 

@@ -2,18 +2,25 @@
 # User interface file for shiny
 
 library(shiny)
+library(shinyIncubator)
 
 plotHeight="600px"
 heatmapPlotHeight="1000px"
 
-shinyUI(pageWithSidebar(
+shinyUI(
+  pageWithSidebar(
   
+
   # Application title
-  headerPanel("Seed"),
-  tabsetPanel(  
+  headerPanel("Seed",   tags$link(rel = 'stylesheet', type = 'text/css', href = 'style.css')),
+  
+  
+  tabsetPanel( 
+    
     tabPanel("Data", 
+      progressInit(), 
       sidebarPanel(
-        checkboxInput("loadDemo", "Load Demo Dataset", value=FALSE),
+
         fileInput("metaFilename", "Select metadata file", accept=c('text/csv', 'text/comma-separated-values,text/plain')),
         checkboxInput("metaOptions", "Show file options"),
         conditionalPanel(
@@ -33,7 +40,7 @@ shinyUI(pageWithSidebar(
           selectInput('microbeQuote', 'Quote', c(None='', 'Double Quote'='"', 'Single Quote'="'"), 'Double Quote')
         ),
         HTML('<br>'),
-        
+       
         selectInput("dataTransform", "Transform data:", 
                      list("None"="none",
                           "Relative abundance" = "total",
@@ -41,27 +48,35 @@ shinyUI(pageWithSidebar(
                           "Hellinger" = "hellinger"
                      )
         ),
+        checkboxInput("loadDemo", "Load demonstration dataset", value=FALSE),
+        checkboxInput("advancedOptions", "Show advanced options", value=FALSE),
         
-        numericInput("cutoffPercent", "Combine taxa each representing less than X% of total counts:",
-                     value = 0, min = 0, max = 100, step = 0.00001),
-        helpText("Combined taxa will be labelled 'other_combined'"),            
-        radioButtons("saveType", "Save plots as:", 
-                     list("PDF" = "pdf",
-                          "PNG" = "png")
+        conditionalPanel(
+          condition = "input.advancedOptions == true",
+          checkboxInput("dataNamesLimit", "Limit plot feature options to most abundant taxa", value=TRUE),
+          numericInput("cutoffPercent", "Combine taxa representing less than a given percentage of total counts:",
+                       value = 0, min = 0, max = 100, step = 0.00001),
+          helpText("Combined taxa will be labelled 'other_combined'"),            
+          radioButtons("saveType", "Save plots as:", 
+                       list("PDF" = "pdf",
+                            "PNG" = "png")
+                      )
         ),
         HTML('<hr>'),
         helpText("Input data must be in two files. The metadata file should include sample information. 
                   The taxa file should include the abundances of the taxa in each sample. 
-                  Samples must be in rows."),
-	helpText("Note: Diversity indices are calculated using a relative abundance transformation of the original data.")
-      ),
+                  Samples must be in rows."
+                  ),
+	      helpText("Note: Diversity indices are calculated using a relative abundance transformation of the original data.")
+        ),
              
       mainPanel(
         tableOutput("viewMetaData"),
         tableOutput("viewMicrobeData"),
         HTML("<br>"),
-        helpText("This Venn diagram shows the number of samples in each file. Only the overlapping 
-                 samples are retained for use by Seed."),
+        helpText("This Venn diagram shows the number of samples in each file. 
+                  Only the overlapping samples are retained for use by Seed."
+                  ),
         plotOutput("vennPlot", height="300px"),
         textOutput("dimRawMeta"),
         textOutput("dimRawMicrobe"),
@@ -73,7 +88,6 @@ shinyUI(pageWithSidebar(
     # Histogram tab
     tabPanel("Histogram", 
       uiOutput("histVariableSelection"),
-      
       mainPanel(    
         plotOutput("histPlot", height=plotHeight)
       )
@@ -82,7 +96,6 @@ shinyUI(pageWithSidebar(
     # Scatterplot tab
     tabPanel("Scatter",
       uiOutput("scatterVariableSelection"),
-      
       mainPanel(
         plotOutput("scatterPlot", height=plotHeight)
       )
@@ -94,7 +107,6 @@ shinyUI(pageWithSidebar(
     # PCoA tab
     tabPanel("PCoA", 
              uiOutput("pcoaVariableSelection"),
-             
              mainPanel(
                  plotOutput("pcoaPlot", height=plotHeight)
              )
@@ -105,14 +117,12 @@ shinyUI(pageWithSidebar(
     # bar charts
     tabPanel("Bar plot",
              uiOutput("barVariableSelection"),
-             
              mainPanel(
                plotOutput("barPlot", height=plotHeight)
              )
     ),
     tabPanel("Cluster", 
              uiOutput("clusterVariableSelection"),
-             
              mainPanel(
                tabsetPanel(
                  id = "clusterTab",
@@ -148,22 +158,23 @@ shinyUI(pageWithSidebar(
                )
              )
     ),
-    # heatmap
-    tabPanel("Heatmap",
-
-
-      uiOutput("heatmapVariableSelection"),
-      mainPanel(
-        plotOutput("heatmapPlot", height=heatmapPlotHeight)
-      )
-    ),
-    # stacked bar plot
+    
+        # stacked bar plot
     tabPanel("Stacked bar plot",
              uiOutput("stackedbarVariableSelection"),
              mainPanel(
                plotOutput("stackedBarPlot", height=plotHeight)
              )
     ),    
+    
+    # heatmap
+    tabPanel("Heatmap",
+      uiOutput("heatmapVariableSelection"),
+      mainPanel(
+        plotOutput("heatmapPlot", height=heatmapPlotHeight)
+      )
+    ),
+
  
     # help
     tabPanel("Help",
@@ -221,5 +232,6 @@ shinyUI(pageWithSidebar(
   ),  
 
   mainPanel()
+
 ))
         
