@@ -569,7 +569,7 @@ shinyServer(function(input, output, session) {
      cutree(clusterObject(), h=input$clusterCutHeight*max(clusterObject()$height))
   })
   subtreeData <- reactive({
-     clusterData()[subtreeGroups()==input$clusterGroup,]
+     microbeData()[subtreeGroups()==input$clusterGroup,]   
   })
   subtreeDist <- reactive({
      vegdist(subtreeData(), method=input$distMethod, na.rm=T)
