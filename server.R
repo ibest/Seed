@@ -110,13 +110,11 @@ shinyServer(function(input, output, session) {
     return(DAT[,relcolsums >= cutoff])
   }
   
-  
+  #get features for plot annotation
   getFeatures = reactive({
-    if(is.null(allData())) return(c("None"))
-    if(input$dataNamesLimit && ncol(microbeData()) > 50) {
-      return(c(names(metaData()), names(microbeData()[,1:50]))) 
-    }
-    return(names(allData))
+    if(is.null(allData())) {
+        return(c("None"))
+    } else return(names(metaData()))
   })
 
 #########################################################################################
@@ -169,7 +167,7 @@ shinyServer(function(input, output, session) {
   microbeData <- reactive({ 
    withProgress(session,min=0,max=1, 
      expr = {
-       setProgress(message = "Loading Data . . .", value = 1)   
+       setProgress(message = "Loading data . . .", value = 1)   
    
        microbeData<-preMicrobeData()
        if (input$dataTransform!="none"){
@@ -195,7 +193,7 @@ shinyServer(function(input, output, session) {
   inputMetaData<-reactive({
    withProgress(session,min=0,max=1, 
    expr = {
-    setProgress(message = "Loading Data . . .", value = 1)
+    setProgress(message = "Loading data . . .", value = 1)
     metaFile <- input$metaFilename$datapath
 
     if (is.null(metaFile) && !input$loadDemo) return(NULL)
@@ -219,12 +217,11 @@ shinyServer(function(input, output, session) {
   })
 
   metaData <- reactive({ 
-  withProgress(session,min=0,max=1, 
+   metaData<-inputMetaData()
+   if (is.null(input$microbeFilename$datapath) && !input$loadDemo) return(metaData)
+   withProgress(session,min=0,max=1, 
    expr = {
     setProgress(message = "Calculating diversity indices . . . ", value = 1)
-   
-    metaData<-inputMetaData()
-    if (is.null(input$microbeFilename$datapath) && !input$loadDemo) return(metaData)
 
     metaData<-metaData[row.names(metaData)%in%row.names(inputMicrobeData()),]
 
@@ -499,6 +496,10 @@ shinyServer(function(input, output, session) {
   # dynamic cluster UI
   output$clusterVariableSelection <- renderUI({
     sidebarPanel(
+      HTML('<div align="right">'),
+      actionButton("generateCluster", "Generate Plot"),
+      HTML("</div>"),
+      HTML('<hr>'),
       selectInput(
            "distMethod", "Distance method:", 
            choices = c("euclidean", "manhattan", "canberra", "bray", "kulczynski", 
@@ -524,15 +525,15 @@ shinyServer(function(input, output, session) {
                   min=0.0, max=1.0, value=0.5),
       numericInput("clusterGroup", "Select subtree", 1),
       
-#      actionButton("generateCluster", "Generate Plot"),
+
       conditionalPanel(
         condition = "input.clusterChoice == 'Custom'",
         checkboxGroupInput(inputId="customClusterVariables", label="",
                            choices=getFeatures())
       ),
-      HTML('<br><br><br>'),
       HTML('<div align="right">'),
-      downloadButton("saveCluster", "Save Plot"),
+        HTML('<br><br>'),
+        downloadButton("saveCluster", "Save Plot"),
       HTML('</div>'),
       uiOutput("clusterPlotOptions")
     )
@@ -662,7 +663,7 @@ shinyServer(function(input, output, session) {
   plotSilhouette<-function(){
    withProgress(session,min=0,max=1, 
      expr = {
-      setProgress(message = "Generating Plot . . . ", value = 1) 
+      setProgress(message = "Generating plot . . . ", value = 1) 
        try({
         if(is.null(allData())) return(NULL)
         plot(silhouetteObject(), main = input$clusterTitle, 
@@ -680,18 +681,25 @@ shinyServer(function(input, output, session) {
   }
    
   output$clusterPlot <- renderPlot({
- #   if(is.null(input$generateCluster)) return(NULL)
- #   if(input$generateCluster == 0) return(NULL)
- #   isolate(plotCompleteTree())
-     plotCompleteTree()
+    if(is.null(input$generateCluster)) return(NULL)
+    if(input$generateCluster == 0) return(NULL)
+    isolate(plotCompleteTree())
+ #    plotCompleteTree()
   })
   
   output$clusterGroupPlot <- renderPlot({
-    plotSubTree()
+    if(is.null(input$generateCluster)) return(NULL)
+    if(input$generateCluster == 0) return(NULL)
+    isolate(plotSubTree())
+ #   plotSubTree()
   })
 
+
   output$silhouettePlot <- renderPlot({
-    plotSilhouette()
+    if(is.null(input$generateCluster)) return(NULL)
+    if(input$generateCluster == 0) return(NULL)
+    isolate(plotSilhouette())
+ #   plotSilhouette()
   })
   
   output$saveCluster <- downloadHandler(
@@ -829,6 +837,11 @@ shinyServer(function(input, output, session) {
   #  PCoA UI
   output$pcoaVariableSelection <- renderUI({
     sidebarPanel(
+
+      HTML('<div align="right">'),
+      actionButton("generatePcoa", "Generate Plot"),
+      HTML("</div>"),
+      HTML('<hr>'),
       numericInput("pcoX", "Principal coordinate X:", 1),
       numericInput("pcoY", "Principal coordinate Y:", 2), 
       selectInput("pcoaDistMethod", "Distance method:", 
@@ -845,8 +858,8 @@ shinyServer(function(input, output, session) {
         condition = 'input.pcoaColorType == "category"',
         numericInput("npcoaColorCat", "Number of categories:", 4)
       ),
-      HTML('<br><br><br>'),
       HTML('<div align="right">'),
+      HTML('<br><br>'),
       downloadButton("savePcoa", "Save Plot"),
       HTML('<br><br>'),
       downloadButton("savePcoaEigen", "Save Eigenvectors"),
@@ -892,8 +905,9 @@ shinyServer(function(input, output, session) {
 
   
   capscaleObject<-reactive({
-    capscale(microbeData()~1, distance=input$pcoaDistMethod)
-
+     if(is.null(input$generatePcoa)) return(NULL)
+     if(input$generatePcoa == 0) return(NULL)
+     isolate( capscale(microbeData()~1, distance=input$pcoaDistMethod) )
   })
   pcoX<-reactive({
     pcoaObject()[,input$pcoX]
@@ -922,7 +936,7 @@ shinyServer(function(input, output, session) {
      expr = {
       setProgress(message = "Generating plot . . . ", value = 1)
       if(is.null(allData())) return(NULL)
-     layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
+      layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
       par(mar=c(input$pcoaMarBottom,input$pcoaMarLeft,
                 input$pcoaMarTop,input$pcoaMarRight))
       colorV <- pcoaCVlist()[[1]]
@@ -973,37 +987,66 @@ shinyServer(function(input, output, session) {
     }
   )
 
-  # display PCoA plot
-  output$pcoaPlot <- renderPlot(
-    plotPcoa()
-  )
-  
+  output$pcoaPlot <- renderPlot({
+    if(is.null(input$generatePcoa)) return(NULL)
+    if(input$generatePcoa == 0) return(NULL)
+    isolate(plotPcoa())
+
+  })
+
 
 
 #########################################################################################
 ############################################## WGCNA ####################################
 #########################################################################################
 
+  ##WGCNA creates a correlation matrix with dimension 0.5*ncol(microbeData())^2
+  ## this becomes difficult for n=8000 on a typical system
+  ## so it is limited
+  
+  wgcnaExceedsLimit <- reactive({ncol(microbeData()) > 8000})
+
+  ### For some reason I can't get this bit to work
+  wgcnaErrorMsg <- reactive({
+    if(wgcnaExceedsLimit()) {
+        return(paste(
+               "Due to memory constraints the WGCNA function is limited to\n",
+               "taxa files with 8000 columns or fewer. Try combining infrequent taxa\n",
+               "in the advanced options in the Data tab."
+               )
+        )
+    }
+    return(NULL) 
+  })
+  output$wgcnaErrorOut <- renderText({wgcnaErrorMsg()})
+  ###
+  
   # render sidebars for wgcna plots
   output$wgcnaVariableSelection <- renderUI({
     sidebarPanel(
+      HTML('<div align="right">'),
+      actionButton("generateWgcna", "Generate Plot"),
+      HTML("</div>"),
+      HTML('<hr>'),
       helpText("Warning: The Kendall correlation method is very slow."),
       selectInput("corMethod", "Network correlation method:", 
                   choices = c("pearson", "spearman", "kendall")),
       sliderInput("cutLevel", "Cut-off level:", min=0.0, max=1.0, value=0.8),
       numericInput("selectGroup", "Selected group:", 1),
       HTML('<br>'),
-      helpText("Note: Metadata correlations use the Pearson method."),
-      helpText("NA correlations replaced with 0."),
-
-      HTML('<hr>'),
+      helpText("Notes: "),
+      helpText("Metadata correlations use the Pearson method."),
+      helpText("NA correlations are replaced with 0."),
+      helpText("WGCNA is limited to data with fewer than 8000 columns."),
       HTML('<div align="right">'),
+      HTML('<hr>'),
       downloadButton("saveWGCNA", "Save Plot"),
       HTML('</div>')
       )
   })
 
   cors <- reactive({ 
+
     pnacors<-cor(microbeData(), method=input$corMethod) 
     pnacors[is.na(pnacors)]<-0
     pnacors
@@ -1012,8 +1055,12 @@ shinyServer(function(input, output, session) {
   hdADJ <- reactive({ hclust(dADJ(), method="average") })
   
   plotDendrogram <- function(){
+   withProgress(session,min=0,max=1, 
+   expr = {
+   setProgress(message = "Generating plot . . . ", value = 1)
    try({
     if(is.null(allData())) return(NULL)
+    if(wgcnaExceedsLimit()) return(NULL)
     groups<-cutreeStatic(dendro=hdADJ(), minSize=3,cutHeight=input$cutLevel)
     moduleColors<-getColor(groups, "unique")[[1]]
     plotDendroAndColors(hdADJ(), 
@@ -1025,14 +1072,16 @@ shinyServer(function(input, output, session) {
                         cex.rowText=fontSize(), cex.axis=fontSize(), cex.lab=fontSize()
     )
    })
-  }
-  output$dendroPlot <- renderPlot({
-    plotDendrogram()
   })
-  
+  }
+
   plotHtmp <- function(){
    try({
+    withProgress(session,min=0,max=1, 
+    expr = {
+    setProgress(message = "Generating plot . . . ", value = 1)
     if(is.null(allData())) return(NULL)
+    if(wgcnaExceedsLimit()) return(NULL)
     groups<-cutreeStatic(dendro=hdADJ(), minSize=3,cutHeight=input$cutLevel)
     corlist<-sapply(unique(groups), function(i) cors()[groups==i, groups==i])
     cc<-colorRampPalette(c("white", "blue"))
@@ -1044,15 +1093,17 @@ shinyServer(function(input, output, session) {
               cexCol=fontSize(),
               col=cc)
    })
+   })
   }
-
-  output$htmpPlot <- renderPlot({
-    plotHtmp()
-  })
   
   plotCor <- function(){
    try({
+    withProgress(session,min=0,max=1, 
+    expr = {
+    setProgress(message = "Generating plot . . . ", value = 1)
     if(is.null(allData())) return(NULL)
+    if(wgcnaExceedsLimit()) return(NULL)
+  
     groups<-cutreeStatic(dendro=hdADJ(), minSize=3,cutHeight=input$cutLevel)
     MEs0 = moduleEigengenes(microbeData(), groups+1)$eigengenes
     MEs = orderMEs(MEs0)
@@ -1073,13 +1124,29 @@ shinyServer(function(input, output, session) {
                    zlim = c(-1,1),
                    main = "", 
                    cex.lab.x=fontSize()) 
-   })   
+   })
+  })   
   }
 
-  output$corPlot <- renderPlot({
-    plotCor()
+  output$dendroPlot <- renderPlot({
+    if(is.null(input$generateWgcna)) return(NULL)
+    if(input$generateWgcna == 0) return(NULL)
+    isolate(plotDendrogram())
+  })
+
+  output$htmpPlot <- renderPlot({
+    if(is.null(input$generateWgcna)) return(NULL)
+    if(input$generateWgcna == 0) return(NULL)
+    isolate(plotHtmp())
   })
   
+  output$corPlot <- renderPlot({
+    if(is.null(input$generateWgcna)) return(NULL)
+    if(input$generateWgcna == 0) return(NULL)
+    isolate(plotCor())
+
+  })
+
   output$saveWGCNA <- downloadHandler(
     filename = function() { 
       if (input$wgcnaTab=="ndendrogram"){sp<-"dendrogram"}
@@ -1111,6 +1178,10 @@ shinyServer(function(input, output, session) {
 
   output$heatmapVariableSelection <- renderUI({
     sidebarPanel(
+      HTML('<div align="right">'),
+      actionButton("generateHtmp", "Generate Plot"),
+      HTML('</div>'),
+      HTML('<br>'),
       helpText(
         paste("The heatmap and associated sample clustering",
               "are calculated with only a subset of", 
@@ -1138,7 +1209,7 @@ shinyServer(function(input, output, session) {
         condition = "input.heatmapPlotOptions == true",
         sliderInput("heatmapFontSize", "Font size", min=0.01, max=3.01, value=1.5),
         sliderInput("heatmapWidth", "Heatmap Width", min=0.01, max=2, value=1)
-        #note:  there is no height option because they are relative
+        #note:  there is no height option because height/width are relative
         # no immediately obvious way to set margins
         
       )
@@ -1147,6 +1218,9 @@ shinyServer(function(input, output, session) {
 
   plotHeatmap<-function(){
    try({
+    withProgress(session,min=0,max=1, 
+    expr = {
+    setProgress(message = "Generating plot . . .", value = 1)  
     if(is.null(allData())) return(NULL)
  
     tempMicrobeData = (microbeData()[,order(apply(microbeData(),2,sum),decreasing=TRUE)])
@@ -1156,9 +1230,7 @@ shinyServer(function(input, output, session) {
 
     annotationIndices = which(names(allData()) %in% input$annotationNames)
     heatmapMeta = allData()[,annotationIndices]
-    #browser()
-    #not sure why this goes gret-yellow but looks fine anyway
-    mapcolors = colorRampPalette(c("blue","yellow")) 
+
     heatmapObject = annHeatmap(x=heatmapData,annotation=heatmapMeta,scale="none",
                                col=colorRampPalette(c("blue","red"), space="rgb")(50), 
                                breaks=50, labels=list(cex=input$heatmapFontSize))
@@ -1169,11 +1241,14 @@ shinyServer(function(input, output, session) {
     heatmapObject$labels$Row$cex = input$heatmapFontSize
     plot(heatmapObject)
    })
+   })
   }
 
-  output$heatmapPlot <- renderPlot(
-    plotHeatmap()
-  )
+  output$heatmapPlot <- renderPlot({
+    if(is.null(input$generateHtmp)) return(NULL)
+    if(input$generateHtmp == 0) return(NULL)
+    isolate(plotHeatmap())
+  })
 
   output$saveHeatmap <- downloadHandler(
     filename = function() { paste("heatmapPlot", fileExtension(), sep=".") },
@@ -1200,6 +1275,10 @@ shinyServer(function(input, output, session) {
   output$stackedbarVariableSelection <- renderUI({  
     # generate sidebar
     sidebarPanel(
+      HTML('<div align="right">'),
+      actionButton("generateStacked", "Generate Plot"),
+      HTML('</div>'),
+      HTML('<br>'),
       sliderInput("numBars", "Number of taxa:", min=2, max=15, value=5),
       HTML('<br>'),
       selectInput("stackedBarOrderVariable1", "Order samples by:", 
@@ -1357,6 +1436,9 @@ shinyServer(function(input, output, session) {
   # stacked bar plot
   plotStackedbar <- function(){
    try({
+    withProgress(session,min=0,max=1, 
+    expr = {
+    setProgress(message = "Generating plot . . .", value = 1)
     if(is.null(allData())) return(NULL)
     stackedData = stackedData()[[1]]
 
@@ -1436,7 +1518,7 @@ shinyServer(function(input, output, session) {
     plotLegend(colorV, valueV, gradient=F, cex=input$stackedbarKeyFontSize, 
                keyCol=input$stackedbarKeyColumns)
    })
-
+  })
   }
   
   # save stacked bar plot
@@ -1458,9 +1540,12 @@ shinyServer(function(input, output, session) {
   )
   
   # display stacked bar plot of the requested variable
-  output$stackedBarPlot <- renderPlot(
-    plotStackedbar()
-  )
+
+  output$stackedBarPlot <- renderPlot({
+    if(is.null(input$generateStacked)) return(NULL)
+    if(input$generateStacked == 0) return(NULL)
+    isolate(plotStackedbar())
+  })
 
 #########################################################################################
 ########################################## PLOT OPTIONS #################################

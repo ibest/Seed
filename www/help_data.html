@@ -1,13 +1,22 @@
 <html>
 <body>
+<p>
+Seed requires input data in a specific format. The data should be in two separate files, one for metadata and the other for abundance data. Seed accepts .csv (comma delimited) data by default, but other delimiting characters may be specified by clicking the 'Show file options' box.
 </p>
-Seed requires input data in specific formats. The data should be in two separate files. The metaData file should include sample information. Samples should be in rows, with sample names in the first column. Additional columns may include any information about the samples. The taxaData file should include microbial abundance data. Samples should be in rows, with sample names in the first column. Additional columns should list taxa abundance. The abundance may be presence/absence, relative abundance, or count data. Seed assumes files are in CSV format by default. Other file types may be selected by checking the 'Show file options' box.
+<p>
+The metaData file should include sample information. Samples should be in rows, with sample names in the first column. Additional columns may include any information about the samples. The taxaData file should include abundance data. Samples should be in rows, with sample names in the first column. Additional columns should list taxa abundance. The abundance may be presence/absence, relative abundance, or count data. 
 </p>
 <p>
 Files that are correctly read by Seed will be shown in the main pannel. Only the first five lines will be displayed. When the taxaData file is loaded, Seed automatically calculates several diversity indices and adds them to the metaData information. These diversity calculations include Shannon, Simpson, and Inverse Simpson indices. They are calculated using the vegan R package and may not be appropriate for every type of data.
 </p>
 <p>
 Seed includes options for converting abundance data to relative abundance or to presence/absence. Relative abundance is calculated by dividing each taxa count by the sum of all taxa counts for each sample. Presence/absence converts every non-zero taxa to 1. The converted data is used for all visualizations and summaries.
+</p>
+<p>
+Some plots can be transformed or annotated by metDdata features. If you need to annotate plots using specific taxa data, include those variables in your metadata file as well.
+</p>
+<p>
+It may be useful to combine some taxa with lowest abundance. There is an option to do this, which sums each taxon which individually represents less than X% of total counts and includes a "combined_other" variable in the new taxaData. 
 </p>
 <p>
 Seed supports saving plots in two different file formats. The user may select either PDF or PNG formats. All saved plots will be in the format selected in the 'Data' tab.

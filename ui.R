@@ -47,27 +47,30 @@ shinyUI(
                           "Hellinger" = "hellinger"
                      )
         ),
-        checkboxInput("loadDemo", "Load demonstration dataset", value=FALSE),
-        checkboxInput("advancedOptions", "Show advanced options", value=FALSE),
-        
-        conditionalPanel(
-          condition = "input.advancedOptions == true",
-          checkboxInput("dataNamesLimit", "Limit plot feature options to most abundant taxa", value=TRUE),
-          numericInput("cutoffPercent", "Combine taxa representing less than a given percentage of total counts:",
-                       value = 0, min = 0, max = 100, step = 0.00001),
+
+       #checkboxInput("advancedOptions", "Show advanced options", value=FALSE),
+       # conditionalPanel(
+       #   condition = "input.advancedOptions == true",
+       #   checkboxInput("dataNamesLimit", "Use only the 20 most abundant taxa for plot annotation
+       #                 (metadata variables will always be used)", value=TRUE),
+          numericInput("cutoffPercent", "Combine taxa representing less than a of 
+                        total counts (default 0 does nothing):",
+                        value = 0, min = 0, max = 100, step = 0.00001),
           helpText("Combined taxa will be labelled 'other_combined'"),            
           radioButtons("saveType", "Save plots as:", 
                        list("PDF" = "pdf",
                             "PNG" = "png")
-                      )
+        #              )
         ),
         HTML('<hr>'),
         helpText("Input data must be in two files. The metadata file should include sample information. 
                   The taxa file should include the abundances of the taxa in each sample. 
                   Samples must be in rows."
                   ),
-	      helpText("Note: Diversity indices are calculated using a relative abundance transformation of the original data.")
+	      helpText("Note: Diversity indices are calculated using a relative abundance transformation of the original data."),
+          checkboxInput("loadDemo", "Load a demonstration dataset", value=FALSE)
         ),
+        
              
       mainPanel(
         tableOutput("viewMetaData"),
@@ -144,14 +147,20 @@ shinyUI(
              mainPanel(
                tabsetPanel(
                  id="wgcnaTab",
-                 tabPanel("Dendrogram", value="ndendrogram",
+                 tabPanel("Dendrogram", 
+                          value="ndendrogram",
+                       #  textOutput("wgcnaErrorOut"),
                           plotOutput("dendroPlot", height=plotHeight)
                  ),
-                 tabPanel("Heatmap", value="nheatmap",
+                 tabPanel("Heatmap", 
+                          value="nheatmap",
                           plotOutput("htmpPlot", height=plotHeight)
+                        
                  ),
-                 tabPanel("Correlations", value="ncorrelations",
+                 tabPanel("Correlations", 
+                          value="ncorrelations",
                           plotOutput("corPlot", height=plotHeight)
+
                  )
                  
                )
@@ -182,49 +191,65 @@ shinyUI(
               "helpTopic", 
               "Help topic", 
               choices=c("About", "Data", "Histogram", "Scatter", 
-                    "PCoA", "Bar plot", "Cluster", "WGCNA", "Heatmap", "Color")
-              )
+                    "PCoA", "Bar plot", "Cluster", "WGCNA", "Heatmap", "Color",
+                    "AE35")
+              ),
+         # the following whimsy actually serves a purpose; for an unknown reason
+         # the help page is truncated without something to fill the space downward
+         conditionalPanel(condition = "input.helpTopic == 'AE35'",
+            img(src = "HAL9000.svg"),
+            helpText(""),
+            helpText("It can only be attributable to human error.")
+         ),
+         conditionalPanel(condition = "input.helpTopic != 'AE35'",
+            img(src = "clippy.jpg")
+         )
+
       ),
       mainPanel(
         conditionalPanel(
           condition = "input.helpTopic == 'About'",
-          includeHTML("./html/help_about.html")
+          includeHTML("./www/help_about.html")
         ),
         conditionalPanel(
           condition = "input.helpTopic == 'Data'",
-          includeHTML("./html/help_data.html")
+          includeHTML("./www/help_data.html")
         ),
         conditionalPanel(
           condition = "input.helpTopic == 'Histogram'",
-          helpText("./html/help_hist.html")
+          includeHTML("./www/help_hist.html")
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'Scatter'",
-          includeHTML("./html/help_scatter.html")
+          includeHTML("./www/help_scatter.html")
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'PCoA'",
-          includeHTML("./html/help_PCoA.html")
+          includeHTML("./www/help_PCoA.html")
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'Bar plot'",
-          includeHTML("./html/help_barplot.html")
+          includeHTML("./www/help_barplot.html")
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'Cluster'",
-          includeHTML("./html/help_cluster.html")
+          includeHTML("./www/help_cluster.html")
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'WGCNA'",
-          includeHTML("./html/help_WGCNA.html")
+          includeHTML("./www/help_WGCNA.html")
         ),
         conditionalPanel(
           condition = "input.helpTopic == 'Heatmap'",
-          includeHTML("./html/help_heatmap.html")
+          includeHTML("./www/help_heatmap.html")
         ),
         conditionalPanel(
           condition = "input.helpTopic == 'Color'",
-          includeHTML("./html/help_color.html")
+          includeHTML("./www/help_color.html")
+        ),
+        conditionalPanel(
+          condition = "input.helpTopic == 'AE35'",
+          helpText("I've just picked up a fault in the AE-35 unit.")
         )
       )
     )
