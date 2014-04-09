@@ -13,7 +13,7 @@ Files that are correctly read by Seed will be shown in the main pannel. Only the
 Seed includes options for converting abundance data to relative abundance or to presence/absence. Relative abundance is calculated by dividing each taxa count by the sum of all taxa counts for each sample. Presence/absence converts every non-zero taxa to 1. The converted data is used for all visualizations and summaries.
 </p>
 <p>
-Some plots can be transformed or annotated by metDdata features. If you need to annotate plots using specific taxa data, include those variables in your metadata file as well.
+Some plots can be transformed or annotated by metaData features. The features available are all metaData variables and the twenty most abundant taxa. If you need to annotate plots using other taxa, there is an option to include all taxaData variables. This can make things slow for large datasets.
 </p>
 <p>
 It may be useful to combine some taxa with lowest abundance. There is an option to do this, which sums each taxon which individually represents less than X% of total counts and includes a "combined_other" variable in the new taxaData. 

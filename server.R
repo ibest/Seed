@@ -110,11 +110,13 @@ shinyServer(function(input, output, session) {
     return(DAT[,relcolsums >= cutoff])
   }
   
-  #get features for plot annotation
+  #get features for plot annotation, bar plot
   getFeatures = reactive({
-    if(is.null(allData())) {
-        return(c("None"))
-    } else return(names(metaData()))
+    if(is.null(allData())) return(c("None"))
+    if(input$dataNamesLimit && ncol(microbeData()) > 20) {
+      return(c(names(metaData()), names(microbeData()[,1:20]))) 
+    }
+    return(names(allData))
   })
 
 #########################################################################################

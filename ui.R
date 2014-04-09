@@ -48,19 +48,18 @@ shinyUI(
                      )
         ),
 
-       #checkboxInput("advancedOptions", "Show advanced options", value=FALSE),
-       # conditionalPanel(
-       #   condition = "input.advancedOptions == true",
-       #   checkboxInput("dataNamesLimit", "Use only the 20 most abundant taxa for plot annotation
-       #                 (metadata variables will always be used)", value=TRUE),
-          numericInput("cutoffPercent", "Combine taxa representing less than a of 
-                        total counts (default 0 does nothing):",
-                        value = 0, min = 0, max = 100, step = 0.00001),
+        checkboxInput("advancedOptions", "Show advanced options", value=FALSE),
+        
+        conditionalPanel(
+          condition = "input.advancedOptions == true",
+          checkboxInput("dataNamesLimit", "Limit plot feature options to twenty most abundant taxa", value=TRUE),
+          numericInput("cutoffPercent", "Combine taxa representing less than a given percentage of total counts:",
+                       value = 0, min = 0, max = 100, step = 0.00001),
           helpText("Combined taxa will be labelled 'other_combined'"),            
           radioButtons("saveType", "Save plots as:", 
                        list("PDF" = "pdf",
                             "PNG" = "png")
-        #              )
+                      )
         ),
         HTML('<hr>'),
         helpText("Input data must be in two files. The metadata file should include sample information. 
