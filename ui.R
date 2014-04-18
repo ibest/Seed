@@ -236,7 +236,7 @@ shinyUI(
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'WGCNA'",
-          includeHTML("./www/help_WGCNA.html")
+          includeHTML("./www/help_wgcna.html")
         ),
         conditionalPanel(
           condition = "input.helpTopic == 'Heatmap'",
