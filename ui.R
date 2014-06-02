@@ -193,7 +193,7 @@ shinyUI(
               choices=c("About", "Data", "Histogram", "Scatter", 
                     "PCoA", "Bar plot", "Cluster", "WGCNA", "Heatmap", "Color",
                     "AE35")
-              )
+              ),
               
          conditionalPanel(condition = "input.helpTopic == 'AE35'",
            img(src = "HAL9000.svg"),
