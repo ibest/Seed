@@ -21,4 +21,3 @@ Starting Seed: From within R run the following commands.
 	library(shiny)
 	runApp("/path to Seed folder")
 
-branch test 1
