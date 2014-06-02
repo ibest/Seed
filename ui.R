@@ -67,7 +67,7 @@ shinyUI(
                   Samples must be in rows."
                   ),
 	      helpText("Note: Diversity indices are calculated using a relative abundance transformation of the original data."),
-          checkboxInput("loadDemo", "Load a demonstration dataset", value=FALSE)
+          checkboxInput("loadDemo", "Load a demonstration dataset (Ravel, et alia 2001)", value=FALSE)
         ),
         
              
@@ -186,22 +186,19 @@ shinyUI(
     # help
     tabPanel("Help",
       sidebarPanel(
+        height = 12,
         selectInput(
               "helpTopic", 
               "Help topic", 
               choices=c("About", "Data", "Histogram", "Scatter", 
                     "PCoA", "Bar plot", "Cluster", "WGCNA", "Heatmap", "Color",
                     "AE35")
-              ),
-         # the following whimsy actually serves a purpose; for an unknown reason
-         # the help page is truncated without something to fill the space downward
+              )
+              
          conditionalPanel(condition = "input.helpTopic == 'AE35'",
-            img(src = "HAL9000.svg"),
-            helpText(""),
-            helpText("It can only be attributable to human error.")
-         ),
-         conditionalPanel(condition = "input.helpTopic != 'AE35'",
-            img(src = "clippy.jpg")
+           img(src = "HAL9000.svg"),
+           helpText(""),
+           helpText("It can only be attributable to human error.")
          )
 
       ),
@@ -216,11 +213,16 @@ shinyUI(
         ),
         conditionalPanel(
           condition = "input.helpTopic == 'Histogram'",
-          includeHTML("./www/help_hist.html")
+          includeHTML("./www/help_hist.html"),
+          HTML('<br><br><br><br><br><br><br>
+                <br><br><br><br><br><br><br><br>') 
+            # allows menus to display properly given short main body
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'Scatter'",
-          includeHTML("./www/help_scatter.html")
+          includeHTML("./www/help_scatter.html"),
+          HTML('<br><br><br><br><br><br><br>
+                <br><br><br><br><br><br><br><br>') 
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'PCoA'",
@@ -228,7 +230,9 @@ shinyUI(
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'Bar plot'",
-          includeHTML("./www/help_barplot.html")
+          includeHTML("./www/help_barplot.html"),
+          HTML('<br><br><br><br><br><br><br>
+                <br><br><br><br><br><br><br><br>') 
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'Cluster'",
