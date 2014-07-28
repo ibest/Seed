@@ -14,7 +14,7 @@ Installation: From within R run the following commands.
 	source("http://bioconductor.org/biocLite.R") 
 	biocLite("impute")
 	biocLite("Heatplus")
-	install.packages(c("shiny","vegan","WGCNA","gplots","cluster","devtools")))
+	install.packages(c("shiny","vegan","WGCNA","gplots","cluster","devtools"))
 	devtools::install_github("shiny-incubator","rstudio")
 	
 Starting Seed: From within R run the following commands.
