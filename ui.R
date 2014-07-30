@@ -2,7 +2,7 @@
 # User interface file for shiny
 
 library(shiny)
-library(shinyIncubator)
+
 
 plotHeight="600px"
 heatmapPlotHeight="1000px"
@@ -17,7 +17,7 @@ shinyUI(
   tabsetPanel( 
     
     tabPanel("Data", 
-      progressInit(), 
+
       sidebarPanel(
 
         fileInput("metaFilename", "Select metadata file", accept=c('text/csv', 'text/comma-separated-values,text/plain')),

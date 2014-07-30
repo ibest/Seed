@@ -12,7 +12,7 @@ library(cluster)
 microbeDemo <- read.csv("./Raveletal2011microbe.csv")
 metaDemo <- read.csv("./Raveletal2011meta.csv")
 
-shinyServer(function(input, output, session) {
+shinyServer(function(input, output) {
 
 
 #########################################################################################
@@ -87,7 +87,6 @@ shinyServer(function(input, output, session) {
   # tests to see if file is square (if it has column names for every column)
   isSquare<-function(filename, sep){
 
-     setProgress(message = "Loading data . . . ", value = 1)
      headLines = readLines(filename,2)
      headLines[2] = paste(headLines[2], "arbitrary_string", sep="")
      test<-sapply(sapply(headLines, function(i) strsplit(i,sep)), length)
@@ -132,9 +131,7 @@ shinyServer(function(input, output, session) {
 
   # microbeData will contain relative abundances
   inputMicrobeData<-reactive({
-  withProgress(session,min=0,max=1, 
-   expr = {
-    setProgress(message = "Loading data . . . ", value = 1)
+
     microbeFile <- input$microbeFilename$datapath
     if (is.null(microbeFile) && !input$loadDemo) return(NULL)
     if(input$loadDemo) {
@@ -152,7 +149,7 @@ shinyServer(function(input, output, session) {
         }
     }
     microbeData
-   })
+
   })
 
   preMicrobeData<- reactive({
@@ -167,10 +164,7 @@ shinyServer(function(input, output, session) {
   })
 
   microbeData <- reactive({ 
-   withProgress(session,min=0,max=1, 
-     expr = {
-       setProgress(message = "Loading data . . .", value = 1)   
-   
+
        microbeData<-preMicrobeData()
        if (input$dataTransform!="none"){
          microbeData <- decostand(microbeData, method=input$dataTransform)
@@ -185,7 +179,7 @@ shinyServer(function(input, output, session) {
        microbeData = data.frame(microbeData)
  #   rownames(microbeData) = rnames
  #   colnames(microbeData) = cnames
-    })
+
   })
   
   # metaData will contain all sample information other than microbial abundances
@@ -193,9 +187,7 @@ shinyServer(function(input, output, session) {
   #    from microbeData and add to metaData
   
   inputMetaData<-reactive({
-   withProgress(session,min=0,max=1, 
-   expr = {
-    setProgress(message = "Loading data . . .", value = 1)
+
     metaFile <- input$metaFilename$datapath
 
     if (is.null(metaFile) && !input$loadDemo) return(NULL)
@@ -215,15 +207,12 @@ shinyServer(function(input, output, session) {
         }
     }
     metaData
-   })
+
   })
 
   metaData <- reactive({ 
    metaData<-inputMetaData()
    if (is.null(input$microbeFilename$datapath) && !input$loadDemo) return(metaData)
-   withProgress(session,min=0,max=1, 
-   expr = {
-    setProgress(message = "Calculating diversity indices . . . ", value = 1)
 
     metaData<-metaData[row.names(metaData)%in%row.names(inputMicrobeData()),]
 
@@ -234,8 +223,7 @@ shinyServer(function(input, output, session) {
       inverse.Simpson.diversity=diversity(raMicrobeData, index="invsimpson")
     )
 
-    metaData
-   })
+
   })
   
   # include all data combined in order to produce comprehensive lists of features
@@ -586,51 +574,44 @@ shinyServer(function(input, output, session) {
   
 
   plotCompleteTree<-function(){
-   withProgress(session,min=0,max=1, 
-     expr = {
-      setProgress(message = "Generating plot . . . ", value = 1)
-        try({
-          if(is.null(allData())) return(NULL)
-          colorVariable<-which(colnames(allData())==input$clusterColorVariable)
-          CVlist<-getColor(allData()[,colorVariable], type=input$clusterColorType, 
+    try({
+      if(is.null(allData())) return(NULL)
+      colorVariable<-which(colnames(allData())==input$clusterColorVariable)
+      CVlist<-getColor(allData()[,colorVariable], type=input$clusterColorType, 
                        numCat=input$nclusterColorCat)
-          colorV <- CVlist[[1]]
-          valueV <- CVlist[[2]]
-          layout(matrix(c(1,2,3,1,2,3),ncol=2), height = c(4,1,1),width = c(4,4))
-          par(mar=c(input$clusterMarBottom,input$clusterMarLeft,
-                    input$clusterMarTop,input$clusterMarRight))
-          plotDendroAndColors(
-              clusterObject(), 
-              colors = data.frame(colorV), 
-              dendroLabels = NULL, 
-              abHeight = input$clusterCutHeight*max(clusterObject()$height), 
-              groupLabels = "",
-              main = input$clusterTitle,
-              ylab = input$clusterYlab,
-              setLayout = FALSE, 
-              mar = c(input$clusterMarBottom, input$clusterMarLeft,
-                      input$clusterMarTop, input$clusterMarRight),
-              cex.colorLabels = input$clusterFontSize, 
-              cex.dendroLabels = input$clusterFontSize,
-              cex.rowText = input$clusterFontSize, 
-              cex.axis  = input$clusterFontSize, 
-              cex.lab = input$clusterFontSize, 
-              cex.main = input$clusterFontSize
-         )
-         plotLegend(colorV, valueV, gradient=(input$clusterColorType=="gradient"), 
-                    title=input$clusterKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
-                    max=max(as.numeric(valueV), na.rm=T), cex=input$clusterKeyFontSize, 
-                    keyCol=input$clusterKeyColumns
-         )
-       })
+      colorV <- CVlist[[1]]
+      valueV <- CVlist[[2]]
+      layout(matrix(c(1,2,3,1,2,3),ncol=2), height = c(4,1,1),width = c(4,4))
+      par(mar=c(input$clusterMarBottom,input$clusterMarLeft,
+                input$clusterMarTop,input$clusterMarRight))
+      plotDendroAndColors(
+          clusterObject(), 
+          colors = data.frame(colorV), 
+          dendroLabels = NULL, 
+          abHeight = input$clusterCutHeight*max(clusterObject()$height), 
+          groupLabels = "",
+          main = input$clusterTitle,
+          ylab = input$clusterYlab,
+          setLayout = FALSE, 
+          mar = c(input$clusterMarBottom, input$clusterMarLeft,
+                  input$clusterMarTop, input$clusterMarRight),
+          cex.colorLabels = input$clusterFontSize, 
+          cex.dendroLabels = input$clusterFontSize,
+          cex.rowText = input$clusterFontSize, 
+          cex.axis  = input$clusterFontSize, 
+          cex.lab = input$clusterFontSize, 
+          cex.main = input$clusterFontSize
+      )
+      plotLegend(colorV, valueV, gradient=(input$clusterColorType=="gradient"), 
+                 title=input$clusterKeyTitle, min=min(as.numeric(valueV), na.rm=T), 
+                 max=max(as.numeric(valueV), na.rm=T), cex=input$clusterKeyFontSize, 
+                 keyCol=input$clusterKeyColumns
+     )
     })
   }
 
   plotSubTree<-function(){
-   withProgress(session,min=0,max=1, 
-     expr = {
-      setProgress(message = "Generating plot . . . ", value = 1)
-      try({
+    try({
       if(is.null(allData())) return(NULL)
       colorVariable<-which(colnames(allData())==input$clusterColorVariable)
       CVlist<-getColor(allData()[subtreeGroups()==input$clusterGroup,colorVariable], 
@@ -658,14 +639,11 @@ shinyServer(function(input, output, session) {
                  max=max(as.numeric(valueV), na.rm=T),cex=input$clusterKeyFontSize, 
                  keyCol=input$clusterKeyColumns
       )
-     })
     })
   }
   
   plotSilhouette<-function(){
-   withProgress(session,min=0,max=1, 
-     expr = {
-      setProgress(message = "Generating plot . . . ", value = 1) 
+
        try({
         if(is.null(allData())) return(NULL)
         plot(silhouetteObject(), main = input$clusterTitle, 
@@ -679,7 +657,7 @@ shinyServer(function(input, output, session) {
              cex.names = input$clusterFontSize)  
              # how to change the cluster label font size?
       })
-    })
+
   }
    
   output$clusterPlot <- renderPlot({
@@ -898,9 +876,6 @@ shinyServer(function(input, output, session) {
   })
 
 
-  
-
-
   pcoaObject <- reactive({
     capscaleObject()$CA$u.eig
   })
@@ -934,9 +909,7 @@ shinyServer(function(input, output, session) {
   # generate PCoA plot
   plotPcoa <- function(){
    try({
-    withProgress(session,min=0,max=1, 
-     expr = {
-      setProgress(message = "Generating plot . . . ", value = 1)
+   
       if(is.null(allData())) return(NULL)
       layout(matrix(c(1,2,1,2),ncol=2), height = c(4,1),width = c(4,4))
       par(mar=c(input$pcoaMarBottom,input$pcoaMarLeft,
@@ -960,7 +933,7 @@ shinyServer(function(input, output, session) {
         max = max(as.numeric(valueV), na.rm=T), 
         cex = input$pcoaKeyFontSize, keyCol=input$pcoaKeyColumns
       )
-    })
+
    })
   }
 
@@ -1057,9 +1030,7 @@ shinyServer(function(input, output, session) {
   hdADJ <- reactive({ hclust(dADJ(), method="average") })
   
   plotDendrogram <- function(){
-   withProgress(session,min=0,max=1, 
-   expr = {
-   setProgress(message = "Generating plot . . . ", value = 1)
+
    try({
     if(is.null(allData())) return(NULL)
     if(wgcnaExceedsLimit()) return(NULL)
@@ -1073,15 +1044,13 @@ shinyServer(function(input, output, session) {
                         cex.colorLabels=fontSize(), cex.dendroLabels=fontSize(),
                         cex.rowText=fontSize(), cex.axis=fontSize(), cex.lab=fontSize()
     )
-   })
+   
   })
   }
 
   plotHtmp <- function(){
    try({
-    withProgress(session,min=0,max=1, 
-    expr = {
-    setProgress(message = "Generating plot . . . ", value = 1)
+
     if(is.null(allData())) return(NULL)
     if(wgcnaExceedsLimit()) return(NULL)
     groups<-cutreeStatic(dendro=hdADJ(), minSize=3,cutHeight=input$cutLevel)
@@ -1095,14 +1064,12 @@ shinyServer(function(input, output, session) {
               cexCol=fontSize(),
               col=cc)
    })
-   })
+
   }
   
   plotCor <- function(){
    try({
-    withProgress(session,min=0,max=1, 
-    expr = {
-    setProgress(message = "Generating plot . . . ", value = 1)
+
     if(is.null(allData())) return(NULL)
     if(wgcnaExceedsLimit()) return(NULL)
   
@@ -1127,7 +1094,7 @@ shinyServer(function(input, output, session) {
                    main = "", 
                    cex.lab.x=fontSize()) 
    })
-  })   
+   
   }
 
   output$dendroPlot <- renderPlot({
@@ -1220,9 +1187,7 @@ shinyServer(function(input, output, session) {
 
   plotHeatmap<-function(){
    try({
-    withProgress(session,min=0,max=1, 
-    expr = {
-    setProgress(message = "Generating plot . . .", value = 1)  
+
     if(is.null(allData())) return(NULL)
  
     tempMicrobeData = (microbeData()[,order(apply(microbeData(),2,sum),decreasing=TRUE)])
@@ -1242,7 +1207,6 @@ shinyServer(function(input, output, session) {
  #   heatmapObject$layout$width = heatmapObject$layout$width * input$heatmapWidth
     heatmapObject$labels$Row$cex = input$heatmapFontSize
     plot(heatmapObject)
-   })
    })
   }
 
@@ -1284,6 +1248,7 @@ shinyServer(function(input, output, session) {
       sliderInput("numBars", "Number of taxa:", min=2, max=15, value=5),
       HTML('<br>'),
       selectInput("stackedBarOrderVariable1", "Order samples by:", 
+
                     choices = c("None", getFeatures())          ),
       selectInput("stackedBarOrderVariable2", "Secondary ordering:", 
                     choices = c("None", getFeatures())          ),
@@ -1438,9 +1403,7 @@ shinyServer(function(input, output, session) {
   # stacked bar plot
   plotStackedbar <- function(){
    try({
-    withProgress(session,min=0,max=1, 
-    expr = {
-    setProgress(message = "Generating plot . . .", value = 1)
+
     if(is.null(allData())) return(NULL)
     stackedData = stackedData()[[1]]
 
@@ -1519,7 +1482,7 @@ shinyServer(function(input, output, session) {
     if(input$stackedbarListOrder) mtext(breakLabels,side=1,line=5)
     plotLegend(colorV, valueV, gradient=F, cex=input$stackedbarKeyFontSize, 
                keyCol=input$stackedbarKeyColumns)
-   })
+   
   })
   }
   
