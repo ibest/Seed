@@ -67,7 +67,7 @@ shinyUI(
                   Samples must be in rows."
                   ),
 	      helpText("Note: Diversity indices are calculated using a relative abundance transformation of the original data."),
-          checkboxInput("loadDemo", "Load a demonstration dataset (Ravel, et alia 2001)", value=FALSE)
+          checkboxInput("loadDemo", "Load a demonstration dataset (Ravel, et al. 2010)", value=FALSE)
         ),
         
              
