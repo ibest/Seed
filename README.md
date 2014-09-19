@@ -3,12 +3,16 @@
 
 Seed is nn R/Shiny package for visualizing taxonomic community data. It provides a visual interface for generating a wide variety of plots, including histograms, scatterplots, bar plots, stacked bar plots, PCoA plots, cluster dendrograms, and heatmaps.
 
+## Availability
+
+Seed is available at 
+
 ## Local Installation
 
 Seed requires R version 2.15 or later. For best results, use the latest version of R.
 
 To install R locally, run the following commands from within R.
-```
+```r
 source("http://bioconductor.org/biocLite.R") 	
 biocLite("impute")
 biocLite("Heatplus")
@@ -16,12 +20,16 @@ install.packages(c("shiny","vegan","WGCNA","gplots","cluster"))
 ```
 
 To start Seed, begin an R session and run the following commands.
-```
+```r
 library(shiny)
 runApp("/path to Seed folder")
 ```
 
-Shiny can also be downloaded and run automatically 
+After installing Seed dependencies, the latest stable version of Seed can also be downloaded and run simultaniously using the following R commands.
+```r
+library(shiny)
+runGitHub("Seed","danlbek")
+```
 
 ## Server Setup
 
@@ -29,6 +37,7 @@ Seed is a Shiny application that can be hosted on remote servers using the Shiny
 
 
 ## Documentation and Support
+Help files may be accessed from within the Seed interface using the "Help" tab. A detailed walkthrough of an example dataset (walkthrough.pdf) is also included with the Seed source files. 
 
 Questions, suggestions, and bug reports are welcome and appreciated. Please contact Daniel Beck at danlbek@gmail.com or Christopher Dennis at christozoan@gmail.com.
 

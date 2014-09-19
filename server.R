@@ -225,11 +225,11 @@ shinyServer(function(input, output) {
           paste(nrow(inputMicrobeData()), ncol(inputMicrobeData()), sep = " x "))
   })
   output$dimPostMeta = renderText({
-    paste("Dimension of preprocessed metadata:", 
+    paste("Dimension of processed metadata:", 
           paste(nrow(metaData()), ncol(metaData()), sep = " x "))
   })
   output$dimPostMicrobe = renderText({
-    paste("Dimension of preprocessed taxa data:", 
+    paste("Dimension of processed taxa data:", 
           paste(nrow(microbeData()), ncol(microbeData()), sep = " x ")) 
   })
 

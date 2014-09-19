@@ -1,41 +1,59 @@
 <html>
 <body>
+
+<h4> Loading data </h4>
+
 <p>
-Seed requires input data in a specific format. The data should be in two separate files, one for metadata and the other for abundance data. Seed accepts .csv (comma delimited) data by default, but other delimiting characters may be specified by clicking the 'Show file options' box.
+Seed requires input data in a specific format. The data should be in two separate files, one for metadata and the other for abundance data. Seed accepts .csv (comma delimited) formated files by default, but other delimiting characters may be specified by clicking the 'Show file options' box.
 </p>
+
 <p>
-The metaData file should include sample information. Samples should be in rows, with sample names in the first column. Additional columns may include any information about the samples. The taxaData file should include abundance data. Samples should be in rows, with sample names in the first column. Additional columns should list taxa abundance. The abundance may be presence/absence, relative abundance, or count data. 
+The metaData file should include sample information. Samples should be in rows, with sample names in the first column. Additional columns may include any information about the samples. The taxa file should include abundance data. Samples should be in rows, with sample names in the first column. Additional columns should list taxa abundance. The abundance may be presence/absence, relative abundance, or count data. Please see the Ravel et al. dataset for an example of input file formatting.
 </p>
+
+<h4> Dataset verification </h4>
+
 <p>
-Files that are correctly read by Seed will be shown in the main pannel. Only the first five lines will be displayed. When the taxaData file is loaded, Seed automatically calculates several diversity indices and adds them to the metaData information. These diversity calculations include Shannon, Simpson, and Inverse Simpson indices. They are calculated using the vegan R package and may not be appropriate for every type of data.
+Seed provides a number of features that may be used to verify that files have been loaded correctly. The first five samples for both the metadata file and the taxa file are displayed in the main window. Users should check that the data appears as expected.
 </p>
+
 <p>
-Seed includes options for converting abundance data to relative abundance or to presence/absence. Relative abundance is calculated by dividing each taxa count by the sum of all taxa counts for each sample. Presence/absence converts every non-zero taxa to 1. The converted data is used for all visualizations and summaries.
+Seed automatically associates sample information with abundance measurements using the sample names. Samples that are not present in both the metadata file and the taxa file are discarded. Seed generates a Venn diagram showing how many samples were detected in each file, and how many samples the files shared.
 </p>
+
+<h4> Diversity indices </h4>
+
 <p>
-Some plots can be transformed or annotated by metaData features. The features available are all metaData variables and the twenty most abundant taxa. If you need to annotate plots using other taxa, there is an option to include all taxaData variables. This can make things slow for large datasets.
+
+After loading the abundance data, Seed automatically calculates several diversity indices and adds them to the sample information. These diversity calculations include the Shannon, Simpson, and Inverse Simpson indices. They are calculated using the vegan R package and may not be appropriate for every type of data. If these indices are used, the user should make sure that they are appropriate for the abundance data being analyzed.
 </p>
+
+<h4> Abundance data transformations </h4>
+
 <p>
-It may be useful to combine some taxa with lowest abundance. There is an option to do this, which sums each taxon which individually represents less than X% of total counts and includes a "combined_other" variable in the new taxaData. 
+Seed includes options for relative abundance, presence/absence, and Hellinger data transformations. Relative abundance is calculated by dividing each taxa count by the sum of all taxa counts for each sample. Presence/absence converts every non-zero taxa to 1. The converted data is used for all visualizations and summaries.
 </p>
+
+<h4> Advanced options </h4>
+
 <p>
 Seed supports saving plots in two different file formats. The user may select either PDF or PNG formats. All saved plots will be in the format selected in the 'Data' tab.
 </p>
-<p>
-List of major functions:
-</p>
+
+<h4> Important functions </h4>
+
 <p>
 gplots::venn - generates venn diagram
 </p>
 <p>
-vegan::decostand - tranforms data
+vegan::decostand - transforms data
 <p>
 </p>
-vegan::diversity - creates ecological diversity indices
+vegan::diversity - calculates diversity indices
 </p>
-<p>
-Citation for package vegan:
-</p>
+
+<h5>Citation for package vegan</h5>
+
 <blockquote>
   Jari Oksanen, F. Guillaume Blanchet, Roeland Kindt, Pierre Legendre,
   Peter R. Minchin, R. B. O'Hara, Gavin L. Simpson, Peter Solymos, M.
@@ -43,9 +61,8 @@ Citation for package vegan:
   Package. R package version 2.0-10.
   http://CRAN.R-project.org/package=vegan
 </blockquote>
-<p>
-Citation for package gplots:
-</p>
+
+<h5>Citation for package gplots</h5>
 <blockquote>
   Gregory R. Warnes, Ben Bolker, Lodewijk Bonebakker, Robert Gentleman,
   Wolfgang Huber Andy Liaw, Thomas Lumley, Martin Maechler, Arni
