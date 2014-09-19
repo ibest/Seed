@@ -1,7 +1,7 @@
 # Seed
 #### Simple Exploration of Ecological Datasets
 
-Seed is nn R/Shiny package for visualizing taxonomic community data. It provides a visual interface for generating a wide variety of plots, including histograms, scatterplots, bar plots, stacked bar plots, PCoA plots, cluster dendrograms, and heatmaps.
+Seed is an R/Shiny package for visualizing ecological data. It provides a visual interface for generating a wide variety of plots, including histograms, scatterplots, bar plots, stacked bar plots, PCoA plots, cluster dendrograms, and heatmaps.
 
 ## Availability
 
