@@ -5,13 +5,13 @@ Seed is an R/Shiny package for visualizing ecological data. It provides a visual
 
 ## Availability
 
-Seed is available at 
+Seed is available at https://github.com/danlbek/Seed. 
 
 ## Local Installation
 
 Seed requires R version 2.15 or later. For best results, use the latest version of R.
 
-To install R locally, run the following commands from within R.
+Seed depends on several R packages. To install them, run the following commands from within R.
 ```r
 source("http://bioconductor.org/biocLite.R") 	
 biocLite("impute")
@@ -25,7 +25,7 @@ library(shiny)
 runApp("/path to Seed folder")
 ```
 
-After installing Seed dependencies, the latest stable version of Seed can also be downloaded and run simultaniously using the following R commands.
+After installing Seed dependencies, the latest stable version of Seed can also be downloaded and run simultaneously using the following R commands.
 ```r
 library(shiny)
 runGitHub("Seed","danlbek")
