@@ -25,8 +25,8 @@ shinyUI(
         conditionalPanel(
           condition = "input.metaOptions == true",
           checkboxInput('metaHeader', 'Header', TRUE),
-          selectInput('metaSep', 'Separator', c(Comma=',', Semicolon=';', Tab='\t'), 'Comma'),
-          selectInput('metaQuote', 'Quote', c(None='', 'Double Quote'='"', 'Single Quote'="'"), 'Double Quote')
+          radioButtons('metaSep', 'Separator', c(Comma=',', Semicolon=';', Tab='\t'), ','),
+          radioButtons('metaQuote', 'Quote', c(None='', 'Double Quote'='"', 'Single Quote'="'"), '"')
         ),
         HTML('<hr>'),
         
@@ -35,8 +35,8 @@ shinyUI(
         conditionalPanel(
           condition = "input.microbeOptions == true",
           checkboxInput('microbeHeader', 'Header', TRUE),
-          selectInput('microbeSep', 'Separator', c(Comma=',', Semicolon=';', Tab='\t'), 'Comma'),
-          selectInput('microbeQuote', 'Quote', c(None='', 'Double Quote'='"', 'Single Quote'="'"), 'Double Quote')
+          radioButtons('microbeSep', 'Separator', c(Comma=',', Semicolon=';', Tab='\t'), ','),
+          radioButtons('microbeQuote', 'Quote', c(None='', 'Double Quote'='"', 'Single Quote'="'"), '"')
         ),
         HTML('<br>'),
        
@@ -52,14 +52,14 @@ shinyUI(
         
         conditionalPanel(
           condition = "input.advancedOptions == true",
-          checkboxInput("dataNamesLimit", "Limit plot feature options to twenty most abundant taxa", value=TRUE),
-          numericInput("cutoffPercent", "Combine taxa representing less than a given percentage of total counts:",
-                       value = 0, min = 0, max = 100, step = 0.00001),
-          helpText("Combined taxa will be labelled 'other_combined'"),            
           radioButtons("saveType", "Save plots as:", 
                        list("PDF" = "pdf",
                             "PNG" = "png")
-                      )
+                      ),
+          downloadLink('downloadMetaData', 'Download metadata'),
+	  HTML('<br>'),
+          downloadLink('downloadAbundanceData', 'Download abundance data')
+
         ),
         HTML('<hr>'),
         helpText("Input data must be in two files. The metadata file should include sample information. 
@@ -67,7 +67,7 @@ shinyUI(
                   Samples must be in rows."
                   ),
 	      helpText("Note: Diversity indices are calculated using a relative abundance transformation of the original data."),
-          checkboxInput("loadDemo", "Load a demonstration dataset (Ravel, et al. 2010)", value=FALSE)
+          checkboxInput("loadDemo", "Load a demonstration dataset (Ravel, et al. 2011)", value=FALSE)
         ),
         
              
@@ -86,7 +86,7 @@ shinyUI(
       )
     ),
     
-    # Histogram tab
+    # histogram
     tabPanel("Histogram", 
       uiOutput("histVariableSelection"),
       mainPanel(    
@@ -94,7 +94,7 @@ shinyUI(
       )
     ),
     
-    # Scatterplot tab
+    # scatterplot
     tabPanel("Scatter",
       uiOutput("scatterVariableSelection"),
       mainPanel(
@@ -103,8 +103,22 @@ shinyUI(
     ),
     
 
+    # bar charts
+    tabPanel("Bar plot",
+             uiOutput("barVariableSelection"),
+             mainPanel(
+               plotOutput("barPlot", height=plotHeight)
+             )
+    ),
 
-      
+    # stacked bar plot
+    tabPanel("Stacked bar plot",
+             uiOutput("stackedbarVariableSelection"),
+             mainPanel(
+               plotOutput("stackedBarPlot", height=plotHeight)
+             )
+    ),    
+   
     # PCoA tab
     tabPanel("PCoA", 
              uiOutput("pcoaVariableSelection"),
@@ -113,15 +127,8 @@ shinyUI(
              )
              
     ),
-    
-    
-    # bar charts
-    tabPanel("Bar plot",
-             uiOutput("barVariableSelection"),
-             mainPanel(
-               plotOutput("barPlot", height=plotHeight)
-             )
-    ),
+
+    # cluster dendrogram
     tabPanel("Cluster", 
              uiOutput("clusterVariableSelection"),
              mainPanel(
@@ -140,6 +147,15 @@ shinyUI(
              )
              
     ),
+    
+    # heatmap
+    tabPanel("Heatmap",
+      uiOutput("heatmapVariableSelection"),
+      mainPanel(
+        plotOutput("heatmapPlot", height=heatmapPlotHeight)
+      )
+    ),
+
     # wgcna
     tabPanel("WGCNA",
              uiOutput("wgcnaVariableSelection"),
@@ -166,23 +182,6 @@ shinyUI(
              )
     ),
     
-        # stacked bar plot
-    tabPanel("Stacked bar plot",
-             uiOutput("stackedbarVariableSelection"),
-             mainPanel(
-               plotOutput("stackedBarPlot", height=plotHeight)
-             )
-    ),    
-    
-    # heatmap
-    tabPanel("Heatmap",
-      uiOutput("heatmapVariableSelection"),
-      mainPanel(
-        plotOutput("heatmapPlot", height=heatmapPlotHeight)
-      )
-    ),
-
- 
     # help
     tabPanel("Help",
       sidebarPanel(
@@ -249,10 +248,6 @@ shinyUI(
         conditionalPanel(
           condition = "input.helpTopic == 'Color'",
           includeHTML("./www/help_color.html")
-        ),
-        conditionalPanel(
-          condition = "input.helpTopic == 'AE35'",
-          helpText("I've just picked up a fault in the AE-35 unit.")
         )
       )
     )

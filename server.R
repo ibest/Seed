@@ -9,9 +9,6 @@ library(gplots)
 library(Heatplus)
 library(cluster)
 
-microbeDemo <- read.csv("./Raveletal2011microbe.csv")
-metaDemo <- read.csv("./Raveletal2011meta.csv")
-
 shinyServer(function(input, output) {
 
 
@@ -94,29 +91,6 @@ shinyServer(function(input, output) {
 
   }
   
-  # combines all taxa with total relative abundance (across all samples)
-  # less than the cutoff
-  combinePercent = function(DAT, cutoff, percent = TRUE) {
-    if(cutoff == 0) return(DAT)
-    if(percent) cutoff = cutoff/100
-  
-    colsums = apply(DAT, 2, sum)
-    relcolsums = colsums / sum(colsums)
-    other_combined = apply(DAT[,relcolsums < cutoff],1,sum)
-    if(sum(other_combined) > 0) {
-        return(cbind(DAT[,relcolsums >= cutoff], other_combined))
-    }
-    return(DAT[,relcolsums >= cutoff])
-  }
-  
-  #get features for plot annotation, bar plot
-  getFeatures = reactive({
-    if(is.null(allData())) return(c("None"))
-    if(input$dataNamesLimit && ncol(microbeData()) > 20) {
-      return(c(names(metaData()), names(microbeData()[,1:20]))) 
-    }
-    return(names(allData))
-  })
 
 #########################################################################################
 ############################################# DATA ######################################
@@ -135,7 +109,7 @@ shinyServer(function(input, output) {
     microbeFile <- input$microbeFilename$datapath
     if (is.null(microbeFile) && !input$loadDemo) return(NULL)
     if(input$loadDemo) {
-        microbeData <- microbeDemo
+        microbeData <- read.csv("./Raveletal2011microbe.csv")
     } else {
         microbeData <- read.csv(microbeFile, header=input$microbeHeader, 
                                 sep=input$microbeSep, quote=input$microbeQuote) 
@@ -170,16 +144,7 @@ shinyServer(function(input, output) {
          microbeData <- decostand(microbeData, method=input$dataTransform)
        }
 
-       if(!is.null(microbeData)) {
-         microbeData = combinePercent(microbeData, input$cutoffPercent)
-       }
-       cnames = colnames(microbeData)
-       rnames = rownames(microbeData)
-       microbeData = sapply(microbeData, as.numeric)
-       microbeData = data.frame(microbeData)
- #   rownames(microbeData) = rnames
- #   colnames(microbeData) = cnames
-
+       microbeData
   })
   
   # metaData will contain all sample information other than microbial abundances
@@ -192,7 +157,7 @@ shinyServer(function(input, output) {
 
     if (is.null(metaFile) && !input$loadDemo) return(NULL)
     if(input$loadDemo) {
-      metaData <- metaDemo
+      metaData <- read.csv("./Raveletal2011meta.csv")
     } else {
       metaData <- read.csv(metaFile, header=input$metaHeader, 
                            sep=input$metaSep, quote=input$metaQuote)
@@ -223,7 +188,6 @@ shinyServer(function(input, output) {
       inverse.Simpson.diversity=diversity(raMicrobeData, index="invsimpson")
     )
 
-
   })
   
   # include all data combined in order to produce comprehensive lists of features
@@ -241,15 +205,13 @@ shinyServer(function(input, output) {
   # display top five lines of metaData file
   output$viewMetaData <- renderTable({
     if(is.null(metaData())) return(NULL)
-    if(ncol(metaData()) < 20) return(head(metaData(), n=5))
-    head(metaData(), n=5)[,1:20]
+    head(metaData(), n=5)
   })
   
   # display top five lines of microbeData file
   output$viewMicrobeData <- renderTable({
     if(is.null(microbeData())) return(NULL)
-    if(ncol(microbeData()) < 20) return(head(microbeData(),n=5))
-    head(microbeData(), n=5)[,1:20]
+    head(microbeData(), n=5)
   })
   
   # this is tedious but textOutput doesn't process escape characters
@@ -271,6 +233,20 @@ shinyServer(function(input, output) {
           paste(nrow(microbeData()), ncol(microbeData()), sep = " x ")) 
   })
 
+  output$downloadMetaData <- downloadHandler(
+    filename = function() { paste("seedMetadata", "csv", sep=".") },
+    content = function(filename) {
+      write.csv(metaData(), file=filename, quote=F) 
+    }
+  )
+  output$downloadAbundanceData <- downloadHandler(
+    filename = function() { paste("seedAbundanceData", "csv", sep=".") },
+    content = function(filename) {
+      write.csv(microbeData(), file=filename, quote=F) 
+    }
+  )
+
+
 #########################################################################################
 ########################################### HISTOGRAM ###################################
 #########################################################################################
@@ -279,15 +255,14 @@ shinyServer(function(input, output) {
   output$histVariableSelection <- renderUI({  
     # generate sidebar
     sidebarPanel(
-        selectInput("variable", "Variable:", choices = getFeatures()),
+        selectInput("variable", "Variable:", choices = colnames(allData())),
         sliderInput("breaks", "Breaks:", min=2, max=20, value=10),
         HTML('<br><br>'),
         HTML('<div align="center">'),
-        tableOutput("varSum"),
+        tableOutput('varSum'),
         HTML('<div align="right">'),
         downloadButton("saveHist", "Save Plot"),
         HTML('</div>'),
-        HTML('<br><hr><div align="left">'),
         uiOutput("histPlotOptions")
     )
   })
@@ -305,7 +280,7 @@ shinyServer(function(input, output) {
         sliderInput("histMarTop", "Top margin", min=0.01, max=10.01, value=4.1),
         sliderInput("histMarBottom", "Bottom margin", min=0.01, max=10.01, value=5.1),
         textInput("histXlab", "X label", value=input$variable),
-        textInput("histYlab", "Y label", value="Number of occurances"),
+        textInput("histYlab", "Y label", value="Number of occurrences"),
         textInput("histTitle", "Title", 
                   value=paste("Histogram of ", input$variable, sep=""))
       )
@@ -314,9 +289,10 @@ shinyServer(function(input, output) {
 
   # generate summary of histogram variable for display in sidebar
   output$varSum <- renderTable({
-    if(is.null(allData())) return(NULL)
+    if (is.null(allData())) return(NULL)
     s<-as.matrix(summary(allData()[,which(colnames(allData())==input$variable)]))
-    colnames(s)<-input$variables
+    colnames(s)<-input$variable
+    s
   })
   
   # histogram plot
@@ -367,9 +343,9 @@ shinyServer(function(input, output) {
   output$scatterVariableSelection <- renderUI({
     # generate sidebar
     sidebarPanel(
-      selectInput("variable1", "X:", choices = getFeatures()),
-      selectInput("variable2", "Y:", choices = getFeatures()),
-      selectInput("scatterColorVariable", "Color variable:", choices = getFeatures()),
+      selectInput("variable1", "X:", choices = colnames(allData())),
+      selectInput("variable2", "Y:", choices = colnames(allData()),colnames(allData())[2]),
+      selectInput("scatterColorVariable", "Color variable:", choices = colnames(allData())),
       radioButtons("scatterColorType", "Color options:", 
                   list("Unique" = "unique",
                        "Gradient" = "gradient",
@@ -486,21 +462,14 @@ shinyServer(function(input, output) {
   # dynamic cluster UI
   output$clusterVariableSelection <- renderUI({
     sidebarPanel(
-      HTML('<div align="right">'),
-      actionButton("generateCluster", "Generate Plot"),
-      HTML("</div>"),
-      HTML('<hr>'),
       selectInput(
            "distMethod", "Distance method:", 
-           choices = c("euclidean", "manhattan", "canberra", "bray", "kulczynski", 
-                       "jaccard","gower", "altGower", "morisita", "horn", 
-                       "mountford", "raup", "binomial", "chao", "cao")
+           choices = c("euclidean", "bray", "jaccard", "binomial", "chao")
       ),
       selectInput("hclustMethod", "Cluster method:", 
-                  choices = c("ward", "single", "complete", "average", 
-                              "mcquitty", "median", "centroid")),
+                  choices = c("ward", "single", "complete", "average")),
       selectInput("clusterColorVariable", "Cluster color variable:", 
-                  choices = getFeatures()),
+                  choices = colnames(allData())),
       radioButtons("clusterColorType", "Color options:", 
                    list("Unique" = "unique",
                         "Gradient" = "gradient",
@@ -515,15 +484,9 @@ shinyServer(function(input, output) {
                   min=0.0, max=1.0, value=0.5),
       numericInput("clusterGroup", "Select subtree", 1),
       
-
-      conditionalPanel(
-        condition = "input.clusterChoice == 'Custom'",
-        checkboxGroupInput(inputId="customClusterVariables", label="",
-                           choices=getFeatures())
-      ),
       HTML('<div align="right">'),
-        HTML('<br><br>'),
-        downloadButton("saveCluster", "Save Plot"),
+      HTML('<br><br>'),
+      downloadButton("saveCluster", "Save Plot"),
       HTML('</div>'),
       uiOutput("clusterPlotOptions")
     )
@@ -551,6 +514,7 @@ shinyServer(function(input, output) {
   })
   
   clusterDist <- reactive({
+      if(is.null(allData())) return(NULL)
       vegdist(microbeData(), method=input$distMethod, na.rm=T)
   })
   clusterObject <- reactive({
@@ -569,7 +533,7 @@ shinyServer(function(input, output) {
     hclust(subtreeDist(), method=input$hclustMethod)
   })
   silhouetteObject <- reactive({
-     silhouette(subtreeGroups(), clusterDist(), cex.names = input$clusterFontSize)
+     silhouette(subtreeGroups(), clusterDist())
   })
   
 
@@ -646,40 +610,28 @@ shinyServer(function(input, output) {
 
        try({
         if(is.null(allData())) return(NULL)
-        plot(silhouetteObject(), main = input$clusterTitle, 
-             col = "blue",
-             mar = c(input$clusterMarBottom, input$clusterMarLeft,
-                     input$clusterMarTop, input$clusterMarRight),  
-             cex.axis = input$clusterFontSize, 
-             cex.main = input$clusterFontSize, 
-             cex.lab = input$clusterFontSize,
-             cex.sub = input$clusterFontSize,
-             cex.names = input$clusterFontSize)  
-             # how to change the cluster label font size?
+	par(cex=input$clusterFontSize)
+        plot(silhouetteObject(), 
+             main=input$clusterTitle, 
+             col="blue",
+             mar=c(input$clusterMarBottom, input$clusterMarLeft,
+                     input$clusterMarTop, input$clusterMarRight)
+        )  
       })
 
   }
    
   output$clusterPlot <- renderPlot({
-    if(is.null(input$generateCluster)) return(NULL)
-    if(input$generateCluster == 0) return(NULL)
-    isolate(plotCompleteTree())
- #    plotCompleteTree()
+     plotCompleteTree()
   })
   
   output$clusterGroupPlot <- renderPlot({
-    if(is.null(input$generateCluster)) return(NULL)
-    if(input$generateCluster == 0) return(NULL)
-    isolate(plotSubTree())
- #   plotSubTree()
+    plotSubTree()
   })
 
 
   output$silhouettePlot <- renderPlot({
-    if(is.null(input$generateCluster)) return(NULL)
-    if(input$generateCluster == 0) return(NULL)
-    isolate(plotSilhouette())
- #   plotSilhouette()
+    plotSilhouette()
   })
   
   output$saveCluster <- downloadHandler(
@@ -716,8 +668,8 @@ shinyServer(function(input, output) {
   # dynamic bar plot UI
   output$barVariableSelection <- renderUI({
     sidebarPanel(
-      selectInput("barVariable", "Value variable:", choices = getFeatures()),
-      selectInput("categoryVariable", "Bar variable:", choices = getFeatures()),
+      selectInput("barVariable", "Value variable:", choices = colnames(allData())),
+      selectInput("categoryVariable", "Bar variable:", choices = colnames(allData()), colnames(allData())[2]),
       checkboxInput("barCat", "Categorize bar variable", FALSE),
       conditionalPanel(
         condition = "input.barCat == true",
@@ -817,18 +769,11 @@ shinyServer(function(input, output) {
   #  PCoA UI
   output$pcoaVariableSelection <- renderUI({
     sidebarPanel(
-
-      HTML('<div align="right">'),
-      actionButton("generatePcoa", "Generate Plot"),
-      HTML("</div>"),
-      HTML('<hr>'),
       numericInput("pcoX", "Principal coordinate X:", 1),
       numericInput("pcoY", "Principal coordinate Y:", 2), 
       selectInput("pcoaDistMethod", "Distance method:", 
-          choices = c("euclidean", "manhattan", "canberra", "bray", "kulczynski", 
-                      "jaccard","gower", "altGower", "morisita", "horn", 
-                      "mountford", "raup", "binomial", "chao", "cao")),
-      selectInput("pcoaColorVariable", "Color variable:", choices = getFeatures()),
+          choices = c("euclidean","bray", "jaccard","binomial", "chao")),
+      selectInput("pcoaColorVariable", "Color variable:", choices = colnames(allData())),
       radioButtons("pcoaColorType", "Color options:", 
                    list("Unique" = "unique",
                         "Gradient" = "gradient",
@@ -859,9 +804,9 @@ shinyServer(function(input, output) {
         sliderInput("pcoaMarRight", "Right margin", min=0.01, max=10.01, value=2.1),
         sliderInput("pcoaMarTop", "Top margin", min=0.01, max=10.01, value=4.1),
         sliderInput("pcoaMarBottom", "Bottom margin", min=0.01, max=10.01, value=5.1),
-        textInput("pcoaXlab", "X label", value=paste("Principal coordinates", 
+        textInput("pcoaXlab", "X label", value=paste("Principal coordinate ", 
                   input$pcoX, " (", pcoaPV()[input$pcoX], "%)", sep="")),
-        textInput("pcoaYlab", "Y label", value=paste("Principal coordinates", 
+        textInput("pcoaYlab", "Y label", value=paste("Principal coordinate ", 
                   input$pcoY, " (", pcoaPV()[input$pcoY], "%)", sep="")),
         textInput("pcoaTitle", "Title", 
                   value=paste("Scatter plot of principal coordinates")),
@@ -882,9 +827,7 @@ shinyServer(function(input, output) {
 
   
   capscaleObject<-reactive({
-     if(is.null(input$generatePcoa)) return(NULL)
-     if(input$generatePcoa == 0) return(NULL)
-     isolate( capscale(microbeData()~1, distance=input$pcoaDistMethod) )
+     capscale(microbeData()~1, distance=input$pcoaDistMethod) 
   })
   pcoX<-reactive({
     pcoaObject()[,input$pcoX]
@@ -963,9 +906,7 @@ shinyServer(function(input, output) {
   )
 
   output$pcoaPlot <- renderPlot({
-    if(is.null(input$generatePcoa)) return(NULL)
-    if(input$generatePcoa == 0) return(NULL)
-    isolate(plotPcoa())
+    plotPcoa()
 
   })
 
@@ -975,44 +916,18 @@ shinyServer(function(input, output) {
 ############################################## WGCNA ####################################
 #########################################################################################
 
-  ##WGCNA creates a correlation matrix with dimension 0.5*ncol(microbeData())^2
-  ## this becomes difficult for n=8000 on a typical system
-  ## so it is limited
-  
-  wgcnaExceedsLimit <- reactive({ncol(microbeData()) > 8000})
-
-  ### For some reason I can't get this bit to work
-  wgcnaErrorMsg <- reactive({
-    if(wgcnaExceedsLimit()) {
-        return(paste(
-               "Due to memory constraints the WGCNA function is limited to\n",
-               "taxa files with 8000 columns or fewer. Try combining infrequent taxa\n",
-               "in the advanced options in the Data tab."
-               )
-        )
-    }
-    return(NULL) 
-  })
-  output$wgcnaErrorOut <- renderText({wgcnaErrorMsg()})
-  ###
   
   # render sidebars for wgcna plots
   output$wgcnaVariableSelection <- renderUI({
     sidebarPanel(
-      HTML('<div align="right">'),
-      actionButton("generateWgcna", "Generate Plot"),
-      HTML("</div>"),
-      HTML('<hr>'),
-      helpText("Warning: The Kendall correlation method is very slow."),
       selectInput("corMethod", "Network correlation method:", 
-                  choices = c("pearson", "spearman", "kendall")),
+                  choices = c("pearson", "spearman")),
       sliderInput("cutLevel", "Cut-off level:", min=0.0, max=1.0, value=0.8),
       numericInput("selectGroup", "Selected group:", 1),
       HTML('<br>'),
       helpText("Notes: "),
       helpText("Metadata correlations use the Pearson method."),
       helpText("NA correlations are replaced with 0."),
-      helpText("WGCNA is limited to data with fewer than 8000 columns."),
       HTML('<div align="right">'),
       HTML('<hr>'),
       downloadButton("saveWGCNA", "Save Plot"),
@@ -1033,7 +948,6 @@ shinyServer(function(input, output) {
 
    try({
     if(is.null(allData())) return(NULL)
-    if(wgcnaExceedsLimit()) return(NULL)
     groups<-cutreeStatic(dendro=hdADJ(), minSize=3,cutHeight=input$cutLevel)
     moduleColors<-getColor(groups, "unique")[[1]]
     plotDendroAndColors(hdADJ(), 
@@ -1052,7 +966,6 @@ shinyServer(function(input, output) {
    try({
 
     if(is.null(allData())) return(NULL)
-    if(wgcnaExceedsLimit()) return(NULL)
     groups<-cutreeStatic(dendro=hdADJ(), minSize=3,cutHeight=input$cutLevel)
     corlist<-sapply(unique(groups), function(i) cors()[groups==i, groups==i])
     cc<-colorRampPalette(c("white", "blue"))
@@ -1071,8 +984,6 @@ shinyServer(function(input, output) {
    try({
 
     if(is.null(allData())) return(NULL)
-    if(wgcnaExceedsLimit()) return(NULL)
-  
     groups<-cutreeStatic(dendro=hdADJ(), minSize=3,cutHeight=input$cutLevel)
     MEs0 = moduleEigengenes(microbeData(), groups+1)$eigengenes
     MEs = orderMEs(MEs0)
@@ -1098,21 +1009,15 @@ shinyServer(function(input, output) {
   }
 
   output$dendroPlot <- renderPlot({
-    if(is.null(input$generateWgcna)) return(NULL)
-    if(input$generateWgcna == 0) return(NULL)
-    isolate(plotDendrogram())
+    plotDendrogram()
   })
 
   output$htmpPlot <- renderPlot({
-    if(is.null(input$generateWgcna)) return(NULL)
-    if(input$generateWgcna == 0) return(NULL)
-    isolate(plotHtmp())
+    plotHtmp()
   })
   
   output$corPlot <- renderPlot({
-    if(is.null(input$generateWgcna)) return(NULL)
-    if(input$generateWgcna == 0) return(NULL)
-    isolate(plotCor())
+    plotCor()
 
   })
 
@@ -1147,10 +1052,7 @@ shinyServer(function(input, output) {
 
   output$heatmapVariableSelection <- renderUI({
     sidebarPanel(
-      HTML('<div align="right">'),
-      actionButton("generateHtmp", "Generate Plot"),
-      HTML('</div>'),
-      HTML('<br>'),
+
       helpText(
         paste("The heatmap and associated sample clustering",
               "are calculated with only a subset of", 
@@ -1160,7 +1062,7 @@ shinyServer(function(input, output) {
       sliderInput("numberHeatmapTaxa", "Number of taxa:", min=3, max=100, value=20),
       
       helpText("\nSelect metadata for column annotation:"),
-      checkboxGroupInput(inputId="annotationNames", label="", choices=getFeatures()),
+      checkboxGroupInput(inputId="annotationNames", label="", choices=colnames(metaData())),
 
       HTML('<hr>'),
       HTML('<div align="right">'),
@@ -1176,8 +1078,13 @@ shinyServer(function(input, output) {
       checkboxInput("heatmapPlotOptions", "Show plot options"),
       conditionalPanel(
         condition = "input.heatmapPlotOptions == true",
-        sliderInput("heatmapFontSize", "Font size", min=0.01, max=3.01, value=1.5),
-        sliderInput("heatmapWidth", "Heatmap Width", min=0.01, max=2, value=1)
+        sliderInput("labelFontSize", "Label font size", min=0.01, max=3.01, value=1.5),
+        sliderInput("heatmapWidth", "Heatmap width", min=1, max=10, value=6),
+        sliderInput("legendWidth", "Legend width", min=0.1, max=5, value=1),
+        sliderInput("labelWidth", "Label width", min=1, max=10, value=4),
+        sliderInput("heatmapHeight", "Heatmap Height", min=1, max=10, value=6),
+        sliderInput("dendroHeight", "Dendrogram Height", min=0.4, max=5, value=1),
+        sliderInput("metaHeight", "metaData Height", min=1, max=10, value=4)
         #note:  there is no height option because height/width are relative
         # no immediately obvious way to set margins
         
@@ -1197,23 +1104,29 @@ shinyServer(function(input, output) {
 
     annotationIndices = which(names(allData()) %in% input$annotationNames)
     heatmapMeta = allData()[,annotationIndices]
+    heatmapObject = annHeatmap2(
+			x=heatmapData,
+			dendrogram=list(Row=list(status="no"), 
+					Col=list(status="yes")),
+			annotation=list(Row=list(NULL),
+					Col=list(data=heatmapMeta)),
+			scale="none",
+                        col=colorRampPalette(c("blue","red"), space="rgb")(50), 
+                        breaks=50, 
+			labels=list(Row=list(cex=input$labelFontSize, side=4), 
+				    Col=list(cex=0.001)),
+			legend=2
+                               
+                    )
 
-    heatmapObject = annHeatmap(x=heatmapData,annotation=heatmapMeta,scale="none",
-                               col=colorRampPalette(c("blue","red"), space="rgb")(50), 
-                               breaks=50, labels=list(cex=input$heatmapFontSize))
-
- #  heatmapObject = annHeatmap(x=heatmapData,col = mapcolors,
- #                              annotation=heatmapMeta,scale="none")
- #   heatmapObject$layout$width = heatmapObject$layout$width * input$heatmapWidth
-    heatmapObject$labels$Row$cex = input$heatmapFontSize
-    plot(heatmapObject)
+    plot(heatmapObject, 
+	heights=c(input$dendroHeight, input$heatmapHeight, input$metaHeight),
+	widths=c(input$legendWidth,input$heatmapWidth,input$labelWidth))
    })
   }
 
   output$heatmapPlot <- renderPlot({
-    if(is.null(input$generateHtmp)) return(NULL)
-    if(input$generateHtmp == 0) return(NULL)
-    isolate(plotHeatmap())
+    plotHeatmap()
   })
 
   output$saveHeatmap <- downloadHandler(
@@ -1241,19 +1154,15 @@ shinyServer(function(input, output) {
   output$stackedbarVariableSelection <- renderUI({  
     # generate sidebar
     sidebarPanel(
-      HTML('<div align="right">'),
-      actionButton("generateStacked", "Generate Plot"),
-      HTML('</div>'),
-      HTML('<br>'),
       sliderInput("numBars", "Number of taxa:", min=2, max=15, value=5),
       HTML('<br>'),
       selectInput("stackedBarOrderVariable1", "Order samples by:", 
 
-                    choices = c("None", getFeatures())          ),
+                    choices = c("None", colnames(allData()))          ),
       selectInput("stackedBarOrderVariable2", "Secondary ordering:", 
-                    choices = c("None", getFeatures())          ),
+                    choices = c("None", colnames(allData()))          ),
       selectInput("stackedBarOrderVariable3", "Tertiary ordering:", 
-                    choices = c("None", getFeatures())          ),
+                    choices = c("None", colnames(allData()))          ),
       HTML('<br><br>'),
       HTML('<div align="right">'),
       downloadButton("saveStackedbar", "Save Plot"),
@@ -1406,14 +1315,6 @@ shinyServer(function(input, output) {
 
     if(is.null(allData())) return(NULL)
     stackedData = stackedData()[[1]]
-
-    # this will get rid of jagged top, 
-    # if relative abundance is selected
-
-    if(input$dataTransform == "total") {
-      rawSums = apply(stackedData,1,sum)
-      stackedData = stackedData / rawSums
-    }
     breaks1     = stackedData()[[2]]
     breaks2     = stackedData()[[3]]
     breaks3     = stackedData()[[4]]
@@ -1507,9 +1408,7 @@ shinyServer(function(input, output) {
   # display stacked bar plot of the requested variable
 
   output$stackedBarPlot <- renderPlot({
-    if(is.null(input$generateStacked)) return(NULL)
-    if(input$generateStacked == 0) return(NULL)
-    isolate(plotStackedbar())
+    plotStackedbar()
   })
 
 #########################################################################################
