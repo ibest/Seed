@@ -1,24 +1,31 @@
 <html>
 <body>
+
+<h3> Heatmap </h3>
+
+<h4> Description </h4>
 <p>
-The heatmap and associated sample clustering are based on the taxanomic data. 
-                   Only a subset of taxa are used to generate the heatmap. The taxa are ranked by
-                   the sum of their abundance data. The highest ranked X microbes are used in the heatmap, where
-                   X is selected by the user.
+Heatmaps show an overview of taxa abundance across samples. Each column in the heatmap is a single sample. Taxa are represented in rows. Each cell is colored to reflect the abundance of the taxon in the sample. The heatmap is paired with plots of the metadata, making it possible to visually associate sample abundance information with sample characteristics. The heatmap and associated sample clustering are based on the taxonomic data. Only a subset of taxa are used to generate the heatmap. The taxa are ranked by the sum of their abundance across all samples. The highest ranked microbes are used in the heatmap.
+
 </p>
+
+<h4> Possible uses </h4>
 <p>
-List of major functions:
+Heatmaps can include huge amounts of information, making them ideal for visually summarizing datasets. For example, the heatmap below was generated using the Ravel et al. dataset. Sample clustering, dominant taxa identification, and metadata associations are all apparent.
 </p>
+<img src="heatmap1.jpg", width="400px">
+
+<h4> Important functions </h4>
 <p>
-Heatplus:annHeatmap - generates annotated heatmap
+Heatplus::annHeatmap2 - generates annotated heatmap
 </p>
-<p>
-Citation for package Heatplus:
-</p>
+
+<h5>Citation for package Heatplus</h5>
 <blockquote>
-  Alexander Ploner (2012). Heatplus: Heatmaps with row and/or column
-  covariates and colored clusters. R package version 2.8.0.
+  Alexander Ploner (2012). Heatplus: Heatmaps with row and/or column covariates and colored clusters. R package version 2.8.0.
 </blockquote>
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 </body>
 </html>
 

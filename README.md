@@ -5,7 +5,8 @@ Seed is an R/Shiny package for visualizing ecological data. It provides a visual
 
 ## Availability
 
-Seed is available at https://github.com/danlbek/Seed. 
+Seed is available at https://github.com/danlbek/Seed.
+Direct download link: https://github.com/danlbek/Seed/archive/master.zip
 
 ## Local Installation
 

@@ -1,18 +1,34 @@
 <html>
 <body>
+<h3> Cluster </h3>
+
+<h4> Description </h4>
 <p>
-The cluster panel displays a clustering dendrogram of the samples. The distance between samples is calculated 
-                   using the selected 'Distance method'. The samples are then clustered using the selected 'Cluster method'.
-                   The color variable and color options control the color bar below the dendrogram. See the 'Color' help topic for details.
-                   In order to focus on specific branches of the dendrogram, the subtree cutoff may be used. The 'Subtree cut height'
-                   can be used to set the level at which the tree should be separated. The subtrees may then be viewed in the 'Subtrees' tab.
-                   By default Seed uses the taxa abundances to calculate the differences between samples. This may be changed by selecting
-                   different features to define the samples. Options include using the metadata, using a subset of the taxa abundances, or
-                   selecting some combination of the two.
+The cluster panel displays a clustering dendrogram of the samples. The distance between samples is calculated using the selected 'Distance method'. The samples are then clustered using the selected 'Cluster method'.
 </p>
+
+<h4> Color bar </h4>
 <p>
-List of major functions:
+The color bar below the dendrogram makes it possible to view the distribution of metadata values across the samples. There are three main options, each of which may be appropriate in different situations. The 'Unique' option generates a different color for each different value of the variable. This option works well up to about ten values. When there are many more values the selected colors are still unique, however, they become difficult to tell apart. The 'Gradient' option may be used when the color variable is continuous. This option selects colors from a gradient. This makes it easy to distinguish between low and high valued colors. The third option is to use color 'Categories'. This option breaks the color variable up into a user selected number of groups. These groups are then given unique colors.
 </p>
+
+<h4> Subtrees </h4>
+<p>
+In order to focus on specific branches of the dendrogram, the subtree cutoff may be used. The 'Subtree cut height' can be used to set the level at which the tree should be separated. The subtrees may then be viewed in the 'Subtrees' tab. 
+</p>
+
+<h4> Silhouette </h4>
+<p>
+Silhouette plots can be used to determine how well samples cluster into groups. The silhouette plots use the subtree cut height to break the samples into groups. These plots, along with information such as the average silhouette width may be accessed in the 'Silhouette' tab.
+</p>
+
+<h4> Possible uses </h4>
+<p>
+Cluster dendrograms can be used to visualize and verify sample clustering. For example, the figure below shows a dendrogram generated using the Ravel et al. dataset. The community groups are apparent.
+</p>
+<img src="cluster1.jpg", width="400px">
+
+<h4> Important functions </h4>
 <p>
 stats::hclust - conduct hierarchical clustering
 </p>
@@ -28,9 +44,8 @@ WGNA::plotDendroAndColors - make dendrogram plot with color annotation
 <p>
 cluster::silhouette - plot silhouette
 </p>
-<p>
-Citation for package vegan:
-</p>
+
+<h5>Citation for package  vegan</h5>
 <blockquote>
   Jari Oksanen, F. Guillaume Blanchet, Roeland Kindt, Pierre Legendre,
   Peter R. Minchin, R. B. O'Hara, Gavin L. Simpson, Peter Solymos, M.
@@ -38,9 +53,8 @@ Citation for package vegan:
   Package. R package version 2.0-10.
   http://CRAN.R-project.org/package=vegan
 </blockquote>
-<p>            
-Citation for package WGCNA:
-</p>
+
+<h5>Citation for package  WGCNA</h5>  
 <blockquote>
   Langfelder P and Horvath S, WGCNA: an R package for weighted
   correlation network analysis. BMC Bioinformatics 2008, 9:559
@@ -51,14 +65,17 @@ Citation for package WGCNA:
   Correlations and Hierarchical Clustering. Journal of Statistical
   Software, 46(11), 1-17. URL http://www.jstatsoft.org/v46/i11/.
 </blockquote>
-<p>
-Citation for package cluster:
-</p>
+
+<h5>Citation for package  cluster</h5>
 <blockquote>
   Maechler, M., Rousseeuw, P., Struyf, A., Hubert, M., Hornik,
   K.(2013).  cluster: Cluster Analysis Basics and Extensions. R package
   version 1.14.4.
 </blockquote>
+
+
+<br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+
 </body>
 </html>
 

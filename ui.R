@@ -190,15 +190,9 @@ shinyUI(
               "helpTopic", 
               "Help topic", 
               choices=c("About", "Data", "Histogram", "Scatter", 
-                    "PCoA", "Bar plot", "Cluster", "WGCNA", "Heatmap", "Color",
-                    "AE35")
-              ),
-              
-         conditionalPanel(condition = "input.helpTopic == 'AE35'",
-           img(src = "HAL9000.svg"),
-           helpText(""),
-           helpText("It can only be attributable to human error.")
-         )
+                    "Bar plot", "Stacked bar plot", "PCoA", "Cluster", 
+                    "Heatmap", "WGCNA")
+              )
 
       ),
       mainPanel(
@@ -212,42 +206,35 @@ shinyUI(
         ),
         conditionalPanel(
           condition = "input.helpTopic == 'Histogram'",
-          includeHTML("./www/help_hist.html"),
-          HTML('<br><br><br><br><br><br><br>
-                <br><br><br><br><br><br><br><br>') 
-            # allows menus to display properly given short main body
+          includeHTML("./www/help_histogram.html")
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'Scatter'",
-          includeHTML("./www/help_scatter.html"),
-          HTML('<br><br><br><br><br><br><br>
-                <br><br><br><br><br><br><br><br>') 
-        ),        
-        conditionalPanel(
-          condition = "input.helpTopic == 'PCoA'",
-          includeHTML("./www/help_PCoA.html")
-        ),        
+          includeHTML("./www/help_scatter.html")
+        ),       
         conditionalPanel(
           condition = "input.helpTopic == 'Bar plot'",
-          includeHTML("./www/help_barplot.html"),
-          HTML('<br><br><br><br><br><br><br>
-                <br><br><br><br><br><br><br><br>') 
+          includeHTML("./www/help_barplot.html")
+        ),    
+        conditionalPanel(
+          condition = "input.helpTopic == 'Stacked bar plot'",
+          includeHTML("./www/help_stackedbarplot.html")
+        ),    
+        conditionalPanel(
+          condition = "input.helpTopic == 'PCoA'",
+          includeHTML("./www/help_pcoa.html")
         ),        
         conditionalPanel(
           condition = "input.helpTopic == 'Cluster'",
           includeHTML("./www/help_cluster.html")
-        ),        
-        conditionalPanel(
-          condition = "input.helpTopic == 'WGCNA'",
-          includeHTML("./www/help_wgcna.html")
         ),
         conditionalPanel(
           condition = "input.helpTopic == 'Heatmap'",
           includeHTML("./www/help_heatmap.html")
         ),
         conditionalPanel(
-          condition = "input.helpTopic == 'Color'",
-          includeHTML("./www/help_color.html")
+          condition = "input.helpTopic == 'WGCNA'",
+          includeHTML("./www/help_wgcna.html")
         )
       )
     )
