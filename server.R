@@ -821,14 +821,14 @@ shinyServer(function(input, output) {
   })
 
 
-  pcoaObject <- reactive({
-    capscaleObject()$CA$u.eig
-  })
-
-  
   capscaleObject<-reactive({
      capscale(microbeData()~1, distance=input$pcoaDistMethod) 
   })
+
+  pcoaObject <- reactive({
+    capscaleObject()$CA$u
+  })
+
   pcoX<-reactive({
     pcoaObject()[,input$pcoX]
   })

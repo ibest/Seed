@@ -17,6 +17,7 @@ Seed depends on several R packages. To install them, run the following commands 
 source("http://bioconductor.org/biocLite.R") 	
 biocLite("impute")
 biocLite("Heatplus")
+biocLite("preprocessCore")
 install.packages(c("shiny","vegan","WGCNA","gplots","cluster"))
 ```
 
