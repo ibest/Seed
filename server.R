@@ -838,7 +838,7 @@ shinyServer(function(input, output) {
   # % variation explained
   pcoaPV<-reactive({
     if(is.null(allData())) return(NULL)
-    vars<-apply(pcoaObject(), 2, sd)^2
+    vars<-eigenvals(capscaleObject())
     round(vars/sum(vars)*100, digits=2)
   })
 
