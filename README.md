@@ -18,6 +18,7 @@ source("http://bioconductor.org/biocLite.R")
 biocLite("impute")
 biocLite("Heatplus")
 biocLite("preprocessCore")
+biocLite("GO.db)
 install.packages(c("shiny","vegan","WGCNA","gplots","cluster"))
 ```
 
