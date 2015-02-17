@@ -9,6 +9,10 @@ library(gplots)
 library(Heatplus)
 library(cluster)
 
+# increase maximum file size to 50mb
+# the practical limit may be less depending on available resources
+options(shiny.maxRequestSize=50*1024^2)
+
 shinyServer(function(input, output) {
 
 
