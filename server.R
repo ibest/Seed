@@ -1,4 +1,3 @@
-
 # Created 3/6/2013 by Daniel Beck
 # Server file for shiny
 
@@ -1186,6 +1185,8 @@ shinyServer(function(input, output) {
                       value=FALSE),
         checkboxInput("stackedbarSpaceOrder", "Draw spaces between ordered factors",
                       value=TRUE),
+        checkboxInput("stackedbarSampleNames", "Show sample names", 
+                      value=TRUE),
         sliderInput("stackedbarFontSize", "Font size", min=0.01, max=3.01, value=1.5),
         sliderInput("stackedbarMarLeft", "Left margin", min=0.01, max=10.01, value=4.1),
         sliderInput("stackedbarMarRight", "Right margin", 
@@ -1335,8 +1336,11 @@ shinyServer(function(input, output) {
     valueV<-colnames(stackedData)
 
     if(!input$stackedbarSpaceOrder) breaks = 0
-
-    barLabels = rep("",nrow(microbeData()))
+    if (!input$stackedbarSampleNames) {
+      barLabels = rep("",nrow(microbeData()))
+    } else {
+      barLabels = row.names(stackedData)
+    }
     barplot(t(stackedData), #normalizedStacked 
          ylim = c(min(stackedData), max(stackedData)*1.1),
          beside=F,
