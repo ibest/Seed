@@ -1087,7 +1087,10 @@ shinyServer(function(input, output) {
         sliderInput("labelWidth", "Label width", min=1, max=10, value=4),
         sliderInput("heatmapHeight", "Heatmap Height", min=1, max=10, value=6),
         sliderInput("dendroHeight", "Dendrogram Height", min=0.4, max=5, value=1),
-        sliderInput("metaHeight", "metaData Height", min=1, max=10, value=4)
+        sliderInput("metaHeight", "metaData Height", min=1, max=10, value=4),
+        textInput("colorBound1", "Color 1", value="blue"),
+        textInput("colorBound2", "Color 2", value="red")
+        
         #note:  there is no height option because height/width are relative
         # no immediately obvious way to set margins
         
@@ -1114,10 +1117,10 @@ shinyServer(function(input, output) {
 			annotation=list(Row=list(NULL),
 					Col=list(data=heatmapMeta)),
 			scale="none",
-                        col=colorRampPalette(c("blue","red"), space="rgb")(50), 
+                        col=colorRampPalette(c(input$colorBound1, input$colorBound2), space="rgb")(50), 
                         breaks=50, 
 			labels=list(Row=list(cex=input$labelFontSize, side=4), 
-				    Col=list(cex=0.001)),
+				    Col=list(cex=1)),
 			legend=2
                                
                     )
