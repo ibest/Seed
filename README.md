@@ -14,8 +14,10 @@ Seed requires R version 2.15 or later. For best results, use the latest version 
 
 Seed depends on several R packages. To install them, run the following commands from within R.
 ```r
-source("http://bioconductor.org/biocLite.R") 	
-biocLite(c("preprocessCore","GO.db","impute","Heatplus"))
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install()
+BiocManager::install(c("preprocessCore","GO.db","impute","Heatplus"))
 install.packages(c("shiny","vegan","WGCNA","gplots","cluster"))
 ```
 
